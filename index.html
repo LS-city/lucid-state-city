@@ -182,7 +182,7 @@ const moon = new THREE.DirectionalLight(0xaec4ff, 0.55); moon.position.set(-60, 
 
 const EYE = 1.9, R = 0.45, LIMIT = 104;
 const player = { pos: new THREE.Vector3(0, EYE, 96), yaw: 0, pitch: -0.04 };
-const colliders = [], hotspots = [], pickables = [];
+const colliders = [], platforms = [], hotspots = [], pickables = [], indoorBoxes = [];
 const named = {};
 const tmpBox = new THREE.Box3();
 
@@ -279,11 +279,17 @@ function setup(gltf) {
     const d = o.userData || {};
     if (d.lsc_type) { tmpBox.setFromObject(o); hotspots.push({ type: d.lsc_type, id: d.slot || d.club || 'board', box: tmpBox.clone(), root: o }); }
   });
+  // walk-in rooms (inside the venues and stores)
+  const doors = [];
+  city.traverse(o => { const d = o.userData || {}; if (d.door) { const v = String(d.door).split(',').map(Number); if (v.length === 4 && v.every(Number.isFinite)) doors.push(v); } });
+  city.traverse(o => { const d = o.userData || {}; if (d.lsc_zone) { tmpBox.setFromObject(o); if (!tmpBox.isEmpty()) hotspots.push({ type: d.lsc_zone, id: d.zone_id || '', box: tmpBox.clone(), room: true }); } });
   // venue hotspots
   const venues = { ZC: ['venue', 'zerocool'], FC: ['venue', 'fightclub'], BIT: ['venue', 'bit'] };
   const vb = {};
   city.traverse(o => { if (!o.isMesh) return; const k = o.name.split('_')[0]; if (venues[k]) { tmpBox.setFromObject(o); (vb[k] ||= new THREE.Box3().makeEmpty()).union(tmpBox); } });
   for (const k in vb) hotspots.push({ type: 'venue', id: venues[k][1], box: vb[k] });
+  const ib = {}; city.traverse(o => { const m = /^(ZC|FC|BIT)_(wall|facade)/.exec(o.name); if (m && o.isMesh) { tmpBox.setFromObject(o); (ib[m[1]] ||= new THREE.Box3().makeEmpty()).union(tmpBox); } });
+  for (const k in ib) indoorBoxes.push(ib[k]);
   city.traverse(o => { if (o.isMesh && /^SCREEN_(GAMEPLAY|LIVECAM)/.test(o.name)) { tmpBox.setFromObject(o); hotspots.unshift({ type: 'stream', id: o.name, box: tmpBox.clone() }); } });
   const liveMats = new Set(); city.traverse(o => { if (o.isMesh && o.material && /SCREEN_(GAMEPLAY|LIVECAM)/.test(o.material.name)) liveMats.add(o.material); });
   liveSign = signTex(1024, 576); liveSign.tex.flipY = false;
@@ -292,20 +298,51 @@ function setup(gltf) {
 
   const isMover = o => { for (let p = o; p; p = p.parent) if (/^(CITIZEN|CAR_\d+$)/.test(p.name)) return true; return false; };
   const inSlot = o => { for (let p = o; p; p = p.parent) if (p.userData && p.userData.lsc_type) return true; return false; };
-  const noCollide = /^(CITIZEN|CAR|LANE|XWALK|SIDEWALK|GROUND|STRING|SKY|PUDDLE|RAIN|FOG|VAULT_Rope|STORE_\d+_Awning)/i;
-  const groups = new Map(), drop = [];
+  const noCollide = /^(CITIZEN|CAR|LANE|XWALK|SIDEWALK|GROUND|STRING|SKY|PUDDLE|RAIN|FOG|VAULT_Rope|STORE_\d+_Awning|CUT_)/i;
+  const shellOf = o => { for (let p = o; p; p = p.parent) if (p.userData && p.userData.lsc_nocollide) return true; return false; };
+  const groups = new Map(), drop = [], shells = [];
   city.traverse(o => {
     if (!o.isMesh) return;
     tmpBox.setFromObject(o);
     const sx = tmpBox.max.x - tmpBox.min.x, sz = tmpBox.max.z - tmpBox.min.z;
-    if (!noCollide.test(o.name) && tmpBox.min.y < 1.6 && tmpBox.max.y > 0.45 && (sx > .2 || sz > .2) && sx < 120 && sz < 120)
-      colliders.push(tmpBox.clone());
+    if (shellOf(o)) { if (sx > 4 && sz > 4 && tmpBox.min.y < 1.6) shells.push(tmpBox.clone()); }
+    else if (!noCollide.test(o.name) && tmpBox.min.y < 1.6 && tmpBox.max.y > 0.6 && (sx > .2 || sz > .2) && sx < 120 && sz < 120) {
+      if (tmpBox.max.y <= 1.3 && sx > 2.5 && sz > 2.5) platforms.push(tmpBox.clone());   // stages and risers: walk up onto them
+      else colliders.push(tmpBox.clone());
+    }
     if (isMover(o)) return;
     if (inSlot(o) || Array.isArray(o.material) || o.isSkinnedMesh) { pickables.push(o); return; }
     const g = o.geometry; const key = o.material.uuid + '|' + Object.keys(g.attributes).sort().join(',') + '|' + (g.index ? 1 : 0);
     if (!groups.has(key)) groups.set(key, { mat: o.material, geos: [] });
     groups.get(key).geos.push(g.clone().applyMatrix4(o.matrixWorld)); drop.push(o);
   });
+  // hollow buildings: solid walls all round, open only where a doorway is cut
+  for (const b of shells) {
+    const T = .35, y0 = b.min.y, y1 = b.max.y, slabs = [
+      [b.min.x, b.min.x + T, b.min.z, b.max.z], [b.max.x - T, b.max.x, b.min.z, b.max.z],
+      [b.min.x, b.max.x, b.min.z, b.min.z + T], [b.min.x, b.max.x, b.max.z - T, b.max.z]];
+    let parts = slabs;
+    for (const [dx0, dx1, dz0, dz1] of doors) {
+      const next = [];
+      for (const q of parts) {
+        if (q[0] < dx1 && q[1] > dx0 && q[2] < dz1 && q[3] > dz0 && (q[1] - q[0]) < 1) {
+          if (dz0 > q[2]) next.push([q[0], q[1], q[2], dz0]); if (dz1 < q[3]) next.push([q[0], q[1], dz1, q[3]]);
+        } else next.push(q);
+      }
+      parts = next;
+    }
+    // never put a wall through the middle of a room
+    for (const h of hotspots) {
+      if (!h.room) continue; const r = h.box, rx0 = r.min.x + .5, rx1 = r.max.x - .5, rz0 = r.min.z + .5, rz1 = r.max.z - .5, next = [];
+      for (const q of parts) {
+        if (!(q[0] < rx1 && q[1] > rx0 && q[2] < rz1 && q[3] > rz0)) { next.push(q); continue; }
+        if (q[1] - q[0] < q[3] - q[2]) { if (rz0 > q[2]) next.push([q[0], q[1], q[2], rz0]); if (rz1 < q[3]) next.push([q[0], q[1], rz1, q[3]]); }
+        else { if (rx0 > q[0]) next.push([q[0], rx0, q[2], q[3]]); if (rx1 < q[1]) next.push([rx1, q[1], q[2], q[3]]); }
+      }
+      parts = next;
+    }
+    for (const q of parts) colliders.push(new THREE.Box3(new THREE.Vector3(q[0], y0, q[2]), new THREE.Vector3(q[1], y1, q[3])));
+  }
   let merged = 0;
   try {
     const BGU = THREE.BufferGeometryUtils;
@@ -541,6 +578,13 @@ function eventsPanel() {
     `<p class="note" style="margin-top:14px">Want your event up here? Book The Vault or lease a storefront.</p>`;
 }
 const VENUES = {
+  lounge: ['The Static Lounge', 'mag', 'A low-lit cocktail lounge: long bar, velvet couches and purple neon. Good spot to talk.'],
+  arcade: ['8-BIT Arcade', '', 'Rows of glowing cabinets and a prize counter in the back.'],
+  noodle: ['Noodle Byte', '', 'Late-night ramen bar: counter seats, tables and red lanterns.'],
+  smacked: ['Smacked Shop', 'mag', 'Smacked Shop: shelves, a counter and the register in the back.'],
+  theater: ['Lucid Theater', '', 'Six rows of seats facing the big screen. When the stream is live it plays here: click the screen.'],
+  hotel: ['Hotel Lucid', '', 'The hotel lobby: front desk, couches and the elevators.'],
+  media: ['LSC Media Tower', '', 'The studio under the big screens: the desk, the couch and the live monitors.'],
   zerocool: ['Zero Cool', 'red', 'The main club. Black walls, red neon, and the stream on the screens. The Green Room is in the back.'],
   fightclub: ['Fight Club', 'mag', 'The fighting gamers\' paradise: fight stage, arcade cabinets, the tournament bracket, and the K.O. Lounge. Home of Lucid State City Scuffle Hours.'],
   bit: ['Back In Time', '', 'B.I.T.: 90s and 2000s gaming. CRT stations, retro consoles and the Y2K Lounge.']
@@ -628,8 +672,9 @@ function updateLife(dt, t) {
   else if ((nextFlick -= dt) <= 0 && flickerMats.length) { flick = { f: flickerMats[(Math.random() * flickerMats.length) | 0], left: .25 + Math.random() * .5 }; nextFlick = 1.5 + Math.random() * 4; }
   // rain
   if (rain) {
-    rain.visible = rainOn;
-    if (rainOn) {
+    const indoors = indoorBoxes.some(b => b.containsPoint(player.pos)) || hotspots.some(h => h.room && h.box.containsPoint(player.pos));
+    rain.visible = rainOn && !indoors;
+    if (rain.visible) {
       const a = rain.geometry.attributes.position.array, sd = rain.userData.seed, px = player.pos.x, pz = player.pos.z;
       for (let i = 0, n = sd.length / 3; i < n; i++) {
         let y = sd[i * 3 + 1] - dt * 26; if (y < 0) y += 30; sd[i * 3 + 1] = y;
@@ -864,6 +909,8 @@ function peerPanel(id) {
 const prompt = $('#prompt'); let near = null, lastNear = null;
 prompt.addEventListener('click', () => near && openSpot(near));
 const LABEL = h => h.type === 'stream' ? 'Watch Lucid State City live' : h.type === 'storefront' ? `Storefront ${h.id} · ${SHOPS[h.id] ? SHOPS[h.id].name : 'Available'}` : h.type === 'club' ? 'The Vault · Book a night' : h.type === 'event_board' ? 'Event board' : (VENUES[h.id] || [''])[0];
+function groundAt(x, z) { let g = 0; for (const b of platforms) if (x > b.min.x - .1 && x < b.max.x + .1 && z > b.min.z - .1 && z < b.max.z + .1) g = Math.max(g, b.max.y); return g; }
+let ground = 0;
 function blocked(x, z) { for (const b of colliders) if (x > b.min.x - R && x < b.max.x + R && z > b.min.z - R && z < b.max.z + R) return true; return false; }
 const clock = new THREE.Clock();
 let frameErr = false, lastBlink = -1;
@@ -883,6 +930,7 @@ function frameInner() {
     if (!blocked(nx, player.pos.z)) player.pos.x = nx;
     if (!blocked(player.pos.x, nz)) player.pos.z = nz;
   }
+  const gt = groundAt(player.pos.x, player.pos.z); ground += (gt - ground) * Math.min(1, dt * 12); player.pos.y = EYE + ground;
   camera.position.copy(player.pos);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
   const lb = clock.elapsedTime * 2 | 0; if (liveSign && lb !== lastBlink) { lastBlink = lb; drawLive(clock.elapsedTime); }
@@ -899,7 +947,7 @@ function frameInner() {
 function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 renderer.setAnimationLoop(frame);
-window.__lsc = { openSpot, hotspots, player };
+window.__lsc = { openSpot, hotspots, player, blocked: (x, z) => blocked(x, z), groundAt: (x, z) => groundAt(x, z) };
 window.__onEnter = () => {
   me.n = cleanName(nmEl.value); try { localStorage.setItem('lsc_me', JSON.stringify(me)); } catch (e) {}
   canvas.focus(); startAudio(); connectMulti();
