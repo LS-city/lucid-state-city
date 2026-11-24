@@ -104,6 +104,19 @@ body.chatting #prompt{display:none!important}
 .gpad button[data-d=up]{grid-column:2}.gpad button[data-d=left]{grid-column:1;grid-row:2}.gpad button[data-d=down]{grid-column:2;grid-row:2}.gpad button[data-d=right]{grid-column:3;grid-row:2}
 .touch .gpad{display:grid}
 #toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font:700 22px "Space Grotesk",sans-serif;color:#fff;text-shadow:0 0 14px var(--mag);pointer-events:none;opacity:0;transition:opacity .3s;z-index:4}
+#drinkhud{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:4px 12px;width:max-content;max-width:100%}
+#drinkhud[hidden]{display:none}
+#drinkhud i{width:10px;height:14px;border-radius:2px 2px 4px 4px}
+#gift{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:7;background:var(--glass);border:1px solid var(--gold);border-radius:14px;padding:12px 16px;width:min(380px,calc(100% - 24px));box-shadow:0 0 24px rgba(255,179,71,.3)}
+#gift[hidden]{display:none}
+#gift .row{margin-top:8px}
+.menu{display:grid;gap:10px;margin-top:10px}
+.drink{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03)}
+.drink i{width:14px;height:22px;border-radius:3px 3px 6px 6px}
+.drink b{display:block;font-size:15px}
+.drink small{display:block;font-size:13px;color:#b9b1d6}
+.drink em{font-style:normal;font-size:12px;color:var(--gold)}
+.touch #gift{bottom:auto;top:110px}
 #joy{position:fixed;left:22px;bottom:22px;width:120px;height:120px;border-radius:50%;border:1px solid var(--line);background:rgba(10,7,22,.4);display:none;z-index:4;touch-action:none}
 #joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(41,231,255,.35);border:1px solid var(--cy)}
 .touch #joy{display:block}
@@ -123,6 +136,7 @@ body.chatting #prompt{display:none!important}
   <div class="logo">Lucid State City</div>
   <div class="tp" id="tp"></div>
   <div id="online"><i></i><span id="oncount">Just you so far</span></div>
+  <div id="drinkhud" hidden><i></i><span></span></div>
 </div>
 <div id="prompt" role="button" tabindex="0"></div>
 <div id="joy" aria-hidden="true"><i></i></div>
@@ -146,7 +160,7 @@ body.chatting #prompt{display:none!important}
   <div class="card">
     <h1>Welcome to LSC</h1>
     <p>Walk the city, step into the clubs, and click anything glowing with a sign to see what's there.</p>
-    <p class="note"><b>Computer:</b> <kbd>W A S D</kbd> to walk, drag to look, <kbd>Shift</kbd> to run, <kbd>E</kbd> or click to open what's in front of you.<br><b>Phone:</b> joystick to walk, drag to look, tap a sign.<br><b>Chat:</b> press <kbd>Enter</kbd> (or the Chat button) and say hi. Your words pop up over your head.<br><b>Have fun:</b> <kbd>1</kbd> wave, <kbd>2</kbd> dance, <kbd>3</kbd> cheer, <kbd>4</kbd> hearts, <kbd>F</kbd> fireworks. Press <kbd>E</kbd> by a seat to sit, or by an arcade machine to play.</p>
+    <p class="note"><b>Computer:</b> <kbd>W A S D</kbd> to walk, drag to look, <kbd>Shift</kbd> to run, <kbd>E</kbd> or click to open what's in front of you.<br><b>Phone:</b> joystick to walk, drag to look, tap a sign.<br><b>Chat:</b> press <kbd>Enter</kbd> (or the Chat button) and say hi. Your words pop up over your head.<br><b>Have fun:</b> <kbd>1</kbd> wave, <kbd>2</kbd> dance, <kbd>3</kbd> cheer, <kbd>4</kbd> hearts, <kbd>F</kbd> fireworks. Press <kbd>E</kbd> by a seat to sit, by an arcade machine to play, or at a bar to order a drink.</p>
     <label for="nm">Your name in the city</label><input id="nm" maxlength="16" autocomplete="nickname" placeholder="Visitor">
     <label>Your neon colour</label><div class="sw" id="sw"></div>
     <div class="row"><button class="hot" id="go">Enter the city</button></div>
@@ -155,6 +169,7 @@ body.chatting #prompt{display:none!important}
 
 <div id="errbox" role="alert"></div>
 <div id="toast"></div>
+<div id="gift" hidden><div id="gifttxt"></div><div class="row"><button class="hot" type="button" id="gyes">Cheers</button><button type="button" id="gno">No thanks</button></div></div>
 <div id="tv" aria-label="Live stream"><div class="tvbar"><span>● LIVE · Lucid State City</span><button type="button" id="tvx" aria-label="Close stream">×</button></div><div id="tvbody"></div></div>
 <script>
 (function(){
@@ -334,6 +349,7 @@ function setup(gltf) {
       o.material = o.material.clone(); tmpBox.setFromObject(o);
       tiles.push({ o, box: tmpBox.clone(), base: o.material.emissiveIntensity || 1, col: o.material.emissive.clone(), glow: 0, ph: Math.random() * 6 });
     }
+    const barKey = BAR_MESH[o.name]; if (barKey) { tmpBox.setFromObject(o); hotspots.unshift({ type: 'bar', id: barKey, box: tmpBox.clone().expandByScalar(.6) }); }
     if (/^(BIT_cab\d+|FC_cab\d+|INT_arcade_cab_\d+_\d+)$/.test(o.name)) { tmpBox.setFromObject(o); hotspots.unshift({ type: 'arcade', id: o.name, box: tmpBox.clone() }); }
   });
   const isTile = o => /^(INT_vault_tile|KO_tile|Y2K_tile)_/.test(o.name);
@@ -528,6 +544,7 @@ function openSpot(h) {
   if (previewReset) { previewReset(); previewReset = null; }
   if (h.type === 'stream') { openStream(); return; }
   if (h.type === 'arcade') { openGame(); return; }
+  if (h.type === 'bar') { barPanel(h.id); return; }
   if (h.type === 'scores') { scoresPanel(); panel.classList.add('open'); panel.scrollTop = 0; return; }
   if (h.type === 'storefront') storePanel(h.id);
   else if (h.type === 'club') vaultPanel();
@@ -862,7 +879,7 @@ function setInfo(p, d) {
 }
 function applyMute(p) { const m = muted.has(p.id); p.mat.emissiveIntensity = m ? .15 : .9; if (m && p.bubble) { p.g.remove(p.bubble); p.bubble = null; } }
 function removePeer(id) {
-  const p = peers.get(id); if (!p) return;
+  const p = peers.get(id); if (!p) return; clearDrink(p);
   scene.remove(p.g); p.g.traverse(o => { if (o.isMesh || o.isSprite) { const i = pickables.indexOf(o); if (i >= 0) pickables.splice(i, 1); } });
   peers.delete(id); if (p.seen) logLine(null, `${p.n} left the city`); updateCount();
 }
@@ -879,7 +896,7 @@ function updateCount() {
 }
 function showBubble(p, text) {
   if (p.bubble) { p.g.remove(p.bubble); p.bubble.material.map.dispose(); }
-  p.bubble = bubbleSprite(text, COLORS[p.c]); p.bubble.position.y = 2.55; p.g.add(p.bubble); p.bubbleT = 7;
+  p.bubble = bubbleSprite(text, p.drink && p.drink.fx === 'bubble' ? p.drink.c : COLORS[p.c]); p.bubble.position.y = 2.55; p.g.add(p.bubble); p.bubbleT = 7;
 }
 async function connectMulti() {
   if (room) return;
@@ -889,8 +906,8 @@ async function connectMulti() {
     const mk = id => { const a = room.makeAction(id);
       if (Array.isArray(a)) return { send: (d, o) => a[0](d, o && o.target), on: f => a[1]((d, pid) => f(d, pid)) };
       return { send: (d, o) => a.send(d, o), on: f => { a.onMessage = (d, meta) => f(d, meta && typeof meta === 'object' ? meta.peerId : meta); } }; };
-    act = { hi: mk('hi'), pose: mk('pose'), chat: mk('chat'), emote: mk('emote'), fx: mk('fx'), scores: mk('scores') };
-    room.onPeerJoin = id => { if (!peers.has(id)) makeAvatar(id); act.hi.send({ n: me.n, c: me.c }, { target: id }); if (scores.length) act.scores.send(scores.slice(0, 10), { target: id }); updateCount(); };
+    act = { hi: mk('hi'), pose: mk('pose'), chat: mk('chat'), emote: mk('emote'), fx: mk('fx'), scores: mk('scores'), drink: mk('drink'), gift: mk('gift'), thanks: mk('thanks') };
+    room.onPeerJoin = id => { if (!peers.has(id)) makeAvatar(id); act.hi.send({ n: me.n, c: me.c }, { target: id }); if (scores.length) act.scores.send(scores.slice(0, 10), { target: id }); if (myDrink && performance.now() < myDrink.until) act.drink.send({ d: myDrink.id, s: Math.ceil((myDrink.until - performance.now()) / 1000) }, { target: id }); updateCount(); };
     room.onPeerLeave = id => removePeer(id);
     act.hi.on((d, id) => { if (!d || typeof d !== 'object') return; const p = peers.get(id) || makeAvatar(id); setInfo(p, d); if (!p.seen) { p.seen = true; logLine(null, `${p.n} entered the city`); } updateCount(); });
     act.pose.on((d, id) => {
@@ -907,6 +924,9 @@ async function connectMulti() {
     act.emote.on((d, id) => { const p = peers.get(id); if (!p || muted.has(id) || !EMOTES[d]) return; const now = performance.now(); if (now - (p.lastEm || 0) < 1000) return; p.lastEm = now; peerEmote(p, d); });
     act.fx.on((d, id) => { const p = peers.get(id); if (!p || muted.has(id) || d !== 'fw') return; const now = performance.now(); if (now - (p.lastFw || 0) < 7000) return; p.lastFw = now; launchFireworks(); logLine(null, `${p.n} set off fireworks`); });
     act.scores.on(d => { if (Array.isArray(d)) addScores(d.slice(0, 10)); });
+    act.drink.on((d, id) => { const p = peers.get(id); if (!p || !d || !DRINKS[d.d]) return; applyDrink(p, d.d, d.s); });
+    act.gift.on((d, id) => { const p = peers.get(id); if (!p || muted.has(id) || !d || !DRINKS[d.d]) return; const now = performance.now(); if (now - (p.lastGift || 0) < 10000) return; p.lastGift = now; showGift(id, d.d); });
+    act.thanks.on((d, id) => { const p = peers.get(id); if (!p || !d || !DRINKS[d.d]) return; toast(`${p.n} says cheers!`); logLine(null, `${p.n} accepted your ${DRINKS[d.d].n}`); });
     $('#online').classList.remove('off'); updateCount();
     act.hi.send({ n: me.n, c: me.c });
   } catch (e) {
@@ -951,10 +971,11 @@ cbar.addEventListener('submit', e => {
 addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('input,textarea,button') && !$('#help')) { e.preventDefault(); openChat(); } });
 function peerPanel(id) {
   const p = peers.get(id); if (!p) return;
-  pbody.innerHTML = `<span class="pill">Visitor</span><h2></h2><p class="note">Someone else walking Lucid State City right now.</p><div class="row"><button class="hot" type="button" id="mut"></button></div>`;
+  pbody.innerHTML = `<span class="pill">Visitor</span><h2></h2><p class="note">Someone else walking Lucid State City right now.</p><div class="row"><button class="hot" type="button" id="buy">Buy them a drink</button><button type="button" id="mut"></button></div>`;
   pbody.querySelector('h2').textContent = p.n; pbody.querySelector('h2').style.color = COLORS[p.c];
   const b = $('#mut'), lab = () => b.textContent = muted.has(id) ? `Unmute ${p.n}` : `Mute ${p.n}`; lab();
   b.addEventListener('click', () => { muted.has(id) ? muted.delete(id) : muted.add(id); applyMute(p); lab(); });
+  $('#buy').addEventListener('click', () => giftMenu(id));
   panel.classList.add('open');
 }
 
@@ -1035,8 +1056,11 @@ function standUp() {
     const ang = player.yaw + Math.PI + a * Math.PI / 4, x = st.x - Math.sin(ang) * r, z = st.z - Math.cos(ang) * r;
     if (!blocked(x, z)) { player.pos.x = x; player.pos.z = z; return; } }
 }
+let nearPeer = null;
+function peerNear() { let best = null, bd = 2.4; fwd.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)); peers.forEach(p => { if (!p.g.visible) return; const dx = p.g.position.x - player.pos.x, dz = p.g.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d < bd && (dx * fwd.x + dz * fwd.z) / (d || 1) > .3) { bd = d; best = p; } }); return best; }
 function useAction() {
   if (player.sit) { standUp(); return; }
+  if (nearPeer) { peerPanel(nearPeer.id); return; }
   if (nearSeat) { sitDown(nearSeat); return; }
   if (near) openSpot(near);
 }
@@ -1053,6 +1077,101 @@ function peerEmote(p, type) {
   p.emote = { type, t: 0 };
   if (type === 'hearts') spawnHearts(p.g.position.clone().add(new THREE.Vector3(0, 2.2, 0)));
   showBubble(p, `*${EMOTES[type]}*`); p.bubbleT = 2.5;
+}
+
+/* ---------- bars and drinks (all made-up, no real alcohol) ---------- */
+const BAR_MESH = { GR_counter: 'zerocool', INT_vault_bar: 'vault', KO_counter: 'ko', Y2K_bar: 'y2k', INT_lounge_bar: 'lounge', INT_noodle_counter: 'noodle' };
+const EFFECTS = { glow: 'Makes you glow', halo: 'Neon halo over your head', trail: 'Sparkle trail when you walk', flames: 'Flames at your feet', bounce: 'Bigger bounce when you dance', bubble: 'Chat bubbles in this colour' };
+const BARS = {
+  zerocool: ['Zero Cool · Green Room', [['red-static', 'Red Static', 'Dark cherry fizz with a crackle', '#ff2a3a', 'glow'], ['zero-proof', 'Zero Proof', 'Clear, cold and somehow glowing', '#e8f6ff', 'halo'], ['cool-down', 'Cool Down', 'Mint ice for the back room', '#29e7ff', 'bubble']]],
+  vault: ['The Vault Bar', [['vault-breaker', 'Vault Breaker', 'Berry blast built for the drop', '#ff3ea5', 'bounce'], ['bass-drop', 'Bass Drop', 'Pomegranate, served shaking', '#ff2a3a', 'trail'], ['laser-lime', 'Laser Lime', 'Sour lime that lights you up', '#7dffb0', 'glow']]],
+  ko: ['K.O. Lounge · Combo Bar', [['knockout-punch', 'Knockout Punch', 'Blood-orange with a kick', '#ff7a1a', 'flames'], ['combo-breaker', 'Combo Breaker', 'Lemon-yellow, hits twice', '#ffe14a', 'trail'], ['final-round', 'Final Round', 'Gold soda for champions', '#ffb347', 'halo']]],
+  y2k: ['Y2K Lounge', [['dial-up-fizz', 'Dial-Up Fizz', 'Lime soda that screeches', '#7dffb0', 'bubble'], ['millennium-bug', 'Millennium Bug', 'Grape glitch in a glass', '#b28cff', 'trail'], ['pixel-pop', 'Pixel Pop', 'Blue raspberry, 8-bit fizz', '#29e7ff', 'glow']]],
+  lounge: ['The Static Lounge', [['purple-rain', 'Purple Rain', 'Lavender lemonade on ice', '#b28cff', 'trail'], ['white-noise', 'White Noise', 'Coconut cream, quiet and smooth', '#f3efff', 'halo'], ['velvet-hour', 'Velvet Hour', 'Rose and raspberry', '#ff6fb5', 'glow']]],
+  noodle: ['Noodle Byte', [['brown-sugar-boba', 'Brown Sugar Boba', 'Tiger stripes, extra pearls', '#c9874a', 'bounce'], ['matcha-glow', 'Matcha Glow', 'Iced matcha, very green', '#7dffb0', 'glow'], ['lychee-spark', 'Lychee Spark', 'Lychee soda, pink and bright', '#ff8fb8', 'bubble']]]
+};
+const DRINKS = {}; for (const [k, [bn, list]] of Object.entries(BARS)) for (const [id, n, d, c, fx] of list) DRINKS[id] = { id, n, d, c, fx, bar: bn };
+const DRINK_SECS = 180;
+let myDrink = null;   // { id, until }
+function drinkRow(d, btn) { return `<div class="drink"><i style="background:${d.c};box-shadow:0 0 10px ${d.c}"></i><div><b>${esc(d.n)}</b><small>${esc(d.d)}</small><em>${esc(EFFECTS[d.fx])}</em></div>${btn}</div>`; }
+function barPanel(key, giftTo) {
+  const [bn, list] = BARS[key] || BARS.zerocool; const p = giftTo ? peers.get(giftTo) : null;
+  pbody.innerHTML = `<span class="pill">${giftTo ? 'Buy a drink' : 'Bar menu'}</span><h2 class="mag"></h2><p class="note"></p><div class="menu">${list.map(([id]) => drinkRow(DRINKS[id], `<button class="hot" type="button" data-d="${id}">${giftTo ? 'Send' : 'Order'}</button>`)).join('')}</div>`;
+  pbody.querySelector('h2').textContent = bn;
+  pbody.querySelector('.note').textContent = giftTo && p ? `Pick something for ${p.n}. They get a pop-up and can say cheers.` : 'Every drink here is made up for the city. Each one gives your avatar an effect for 3 minutes that everyone can see.';
+  pbody.querySelector('.menu').addEventListener('click', e => { const b = e.target.closest('button[data-d]'); if (!b) return;
+    if (giftTo) sendGift(giftTo, b.dataset.d); else { haveDrink(b.dataset.d); closePanel(); } });
+  panel.classList.add('open'); panel.scrollTop = 0;
+}
+function giftMenu(id) {
+  const p = peers.get(id); if (!p) return;
+  pbody.innerHTML = `<span class="pill">Buy a drink</span><h2 class="mag"></h2><p class="note">Pick anything from any bar in the city.</p><div class="menu"></div>`;
+  pbody.querySelector('h2').textContent = `For ${p.n}`;
+  pbody.querySelector('.menu').innerHTML = Object.values(DRINKS).map(d => drinkRow(d, `<button class="hot" type="button" data-d="${d.id}">Send</button>`)).join('');
+  pbody.querySelector('.menu').addEventListener('click', e => { const b = e.target.closest('button[data-d]'); if (b) sendGift(id, b.dataset.d); });
+  panel.classList.add('open'); panel.scrollTop = 0;
+}
+function haveDrink(id, from) {
+  const d = DRINKS[id]; if (!d) return; myDrink = { id, until: performance.now() + DRINK_SECS * 1000 };
+  toast(from ? `Cheers to ${from}!` : `${d.n}: cheers!`);
+  if (room && act.drink) act.drink.send({ d: id, s: DRINK_SECS });
+  if (AC && master) { tone(master, AC.currentTime, 1320, 'sine', .06, .12, 6000); tone(master, AC.currentTime + .08, 1760, 'sine', .05, .14, 6000); }
+}
+let lastGift = 0, pendingGift = null, giftTimer = null;
+function sendGift(id, drinkId) {
+  const p = peers.get(id); if (!p || !DRINKS[drinkId] || !room || !act.gift) { toast('They left the city'); return; }
+  if (performance.now() - lastGift < 15000) { toast('The bartender is still making your last one…'); return; }
+  lastGift = performance.now(); act.gift.send({ d: drinkId }, { target: id }); closePanel();
+  toast(`Sent ${DRINKS[drinkId].n} to ${p.n}`); logLine(null, `You bought ${p.n} a ${DRINKS[drinkId].n}`);
+}
+function showGift(fromId, drinkId) {
+  const p = peers.get(fromId), d = DRINKS[drinkId]; if (!p || !d) return;
+  pendingGift = { fromId, drinkId, from: p.n };
+  $('#gifttxt').textContent = `${p.n} bought you a ${d.n}. ${EFFECTS[d.fx]}.`;
+  $('#gift').hidden = false; clearTimeout(giftTimer); giftTimer = setTimeout(() => { $('#gift').hidden = true; pendingGift = null; }, 20000);
+}
+$('#gyes').addEventListener('click', () => { const g = pendingGift; $('#gift').hidden = true; pendingGift = null; if (!g) return;
+  haveDrink(g.drinkId, g.from); if (room && act.thanks) act.thanks.send({ d: g.drinkId }, { target: g.fromId }); });
+$('#gno').addEventListener('click', () => { $('#gift').hidden = true; pendingGift = null; });
+// effects on other people's avatars
+const dotTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 32; const c = cv.getContext('2d'); const g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.4, 'rgba(255,255,255,.6)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, 32, 32);
+  const t = new THREE.CanvasTexture(cv); return t; })();
+function spark(at, color, up, size, life) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  sp.position.copy(at); sp.scale.setScalar(size); scene.add(sp);
+  floaters.push({ sp, v: new THREE.Vector3((Math.random() - .5) * .3, up, (Math.random() - .5) * .3), life });
+}
+function applyDrink(p, id, secs) {
+  const d = DRINKS[id]; if (!d) return; clearDrink(p);
+  p.drink = { ...d, until: performance.now() + Math.max(1, Math.min(DRINK_SECS, secs | 0)) * 1000, col: new THREE.Color(d.c) };
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(.09, .07, .24, 10), new THREE.MeshBasicMaterial({ color: d.c })); cup.position.set(.42, 1.05, -.1); p.g.add(cup); p.drink.cup = cup;
+  if (d.fx === 'halo') { const h = new THREE.Mesh(new THREE.TorusGeometry(.26, .035, 6, 24), new THREE.MeshBasicMaterial({ color: d.c })); h.rotation.x = Math.PI / 2; h.position.y = 2.0; p.g.add(h); p.drink.halo = h; }
+  if (d.fx === 'glow') { p.mat.emissive.set(d.c); p.mat.emissiveIntensity = 2.2; }
+}
+function clearDrink(p) {
+  if (!p.drink) return; ['cup', 'halo'].forEach(k => { if (p.drink[k]) { p.g.remove(p.drink[k]); p.drink[k].geometry.dispose(); } });
+  p.mat.emissive.set(COLORS[p.c]); applyMute(p); p.drink = null;
+}
+let fxT = 0;
+function updateDrinks(dt) {
+  fxT += dt; const tick = fxT > .08; if (tick) fxT = 0;
+  peers.forEach(p => {
+    if (!p.drink) return; if (performance.now() > p.drink.until) { clearDrink(p); return; }
+    if (p.drink.halo) p.drink.halo.rotation.z += dt * 2;
+    const moving = p.cur.distanceTo(p.tgt) > .08;
+    if (tick && p.drink.fx === 'trail' && moving) spark(p.g.position.clone().add(new THREE.Vector3(0, .3 + Math.random() * .6, 0)), p.drink.col, .2, .25, 1.4);
+    if (tick && p.drink.fx === 'flames') spark(p.g.position.clone().add(new THREE.Vector3((Math.random() - .5) * .6, .1, (Math.random() - .5) * .6)), p.drink.col, 1.4, .35, .7);
+    if (p.drink.fx === 'bounce' && p.emote && p.emote.type === 'dance') p.g.position.y += Math.abs(Math.sin(p.emote.t * 9)) * .4;
+  });
+  // my own drink: timer chip + effects you can see when you look down
+  const hud = $('#drinkhud');
+  if (myDrink && performance.now() < myDrink.until) {
+    const d = DRINKS[myDrink.id], left = Math.ceil((myDrink.until - performance.now()) / 1000);
+    hud.hidden = false; hud.firstElementChild.style.background = d.c; hud.lastElementChild.textContent = `${d.n} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    if (tick && (d.fx === 'flames' || (d.fx === 'trail' && (keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || jv.x || jv.y))))
+      spark(new THREE.Vector3(player.pos.x + (Math.random() - .5) * .8, player.pos.y - EYE + .15, player.pos.z + (Math.random() - .5) * .8), new THREE.Color(d.c), d.fx === 'flames' ? 1.2 : .2, .3, .8);
+  } else if (myDrink) { myDrink = null; hud.hidden = true; toast('Your drink wore off'); }
 }
 
 /* ---------- arcade: Neon Snake with a shared high-score board ---------- */
@@ -1136,7 +1255,7 @@ function scoresPanel() {
 /* ---------- loop ---------- */
 const prompt = $('#prompt'); let near = null, lastNear = null;
 prompt.addEventListener('click', useAction);
-const LABEL = h => h.type === 'arcade' ? 'Play Neon Snake' : h.type === 'scores' ? 'Top scores' : h.type === 'stream' ? 'Watch Lucid State City live' : h.type === 'storefront' ? `Storefront ${h.id} · ${SHOPS[h.id] ? SHOPS[h.id].name : 'Available'}` : h.type === 'club' ? 'The Vault · Book a night' : h.type === 'event_board' ? 'Event board' : (VENUES[h.id] || [''])[0];
+const LABEL = h => h.type === 'bar' ? `Order at ${BARS[h.id][0]}` : h.type === 'arcade' ? 'Play Neon Snake' : h.type === 'scores' ? 'Top scores' : h.type === 'stream' ? 'Watch Lucid State City live' : h.type === 'storefront' ? `Storefront ${h.id} · ${SHOPS[h.id] ? SHOPS[h.id].name : 'Available'}` : h.type === 'club' ? 'The Vault · Book a night' : h.type === 'event_board' ? 'Event board' : (VENUES[h.id] || [''])[0];
 function groundAt(x, z) { let g = 0; for (const b of platforms) if (x > b.min.x - .1 && x < b.max.x + .1 && z > b.min.z - .1 && z < b.max.z + .1) g = Math.max(g, b.max.y); return g; }
 let ground = 0;
 function blocked(x, z) { for (const b of colliders) if (x > b.min.x - R && x < b.max.x + R && z > b.min.z - R && z < b.max.z + R) return true; return false; }
@@ -1164,14 +1283,14 @@ function frameInner() {
   camera.position.copy(player.pos);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
   const lb = clock.elapsedTime * 2 | 0; if (liveSign && lb !== lastBlink) { lastBlink = lb; drawLive(clock.elapsedTime); }
-  near = facing(10); nearSeat = player.sit ? null : seatNear();
-  const label = player.sit ? 'Stand up' : nearSeat ? 'Sit down' : near ? LABEL(near) : '';
+  near = facing(10); nearPeer = player.sit ? null : peerNear(); nearSeat = player.sit || nearPeer ? null : seatNear();
+  const label = player.sit ? 'Stand up' : nearPeer ? `${nearPeer.n} · Buy a drink or say hi` : nearSeat ? 'Sit down' : near ? LABEL(near) : '';
   if (label !== lastNear) {
     lastNear = label;
     if (label) { prompt.innerHTML = `<b>${matchMedia('(pointer:coarse)').matches ? 'Tap' : 'E'}</b> · `; prompt.append(label); prompt.style.display = 'block'; }
     else prompt.style.display = 'none';
   }
-  try { updateFun(dt, clock.elapsedTime); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
+  try { updateFun(dt, clock.elapsedTime); updateDrinks(dt); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
   try { updatePeers(dt); sendPose(clock.elapsedTime); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
   try { updateLife(dt, clock.elapsedTime); updateListener(); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
   renderer.render(scene, camera);
@@ -1179,7 +1298,7 @@ function frameInner() {
 function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 renderer.setAnimationLoop(frame);
-window.__lsc = { openSpot, hotspots, player, seats, tiles, useAction, doEmote, doFireworks, openGame, blocked: (x, z) => blocked(x, z), groundAt: (x, z) => groundAt(x, z) };
+window.__lsc = { openSpot, hotspots, player, seats, haveDrink, barPanel, applyDrink, peers, makeAvatar: id => makeAvatar(id), DRINKS, tiles, useAction, doEmote, doFireworks, openGame, blocked: (x, z) => blocked(x, z), groundAt: (x, z) => groundAt(x, z) };
 window.__onEnter = () => {
   me.n = cleanName(nmEl.value); try { localStorage.setItem('lsc_me', JSON.stringify(me)); } catch (e) {}
   canvas.focus(); startAudio(); connectMulti();
