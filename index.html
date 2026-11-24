@@ -766,7 +766,7 @@ $('#sw').addEventListener('click', e => { const b = e.target.closest('button'); 
 /* word filter: add more words to this list any time */
 const BLOCKED = ['fuck', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'whore', 'slut', 'fag', 'retard', 'nigg', 'n1gg', 'kike', 'spic', 'chink', 'tranny'];
 const blockRe = new RegExp(BLOCKED.map(w => w.split('').map(ch => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '+').join('[^a-z0-9]*')).join('|'), 'gi');
-const cleanText = t => String(t).replace(/[\u0000-\u001f​-‏‪-‮]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120).replace(blockRe, m => '*'.repeat(Math.min(m.length, 6)));
+const cleanText = t => String(t).replace(/[\u0000-\u001f\u200b-\u200f\u202a-\u202e]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120).replace(blockRe, m => '*'.repeat(Math.min(m.length, 6)));
 const cleanName = t => cleanText(t).slice(0, 16) || 'Visitor';
 
 const peers = new Map(), muted = new Set();
