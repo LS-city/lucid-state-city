@@ -421,7 +421,7 @@ const WARP = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(95, 16
   WARP.lines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); WARP.scene.add(WARP.lines);
   WARP.core = zGlowSprite('rgb(160,120,255)', 260, 0.08); WARP.core.position.z = -420; WARP.scene.add(WARP.core);
   WARP.clouds = []; for (let i = 0; i < 46; i++) { const s = zGlowSprite('rgb(255,120,60)', 30 + R() * 40, 0.02); s.material.opacity = 0.0; s.userData = { a: R() * 7, r: 12 + R() * 40, z: -R() * 640 }; WARP.scene.add(s); WARP.clouds.push(s); } }
-function warpColors(to) { return { space: [[0.65, 0.8, 1], [1, 1, 1], [0.7, 0.45, 1]], planet: [[1, 0.5, 0.2], [1, 0.2, 0.55], [1, 0.82, 0.3]], city: [[0.22, 0.9, 1], [1, 0.18, 0.56], [0.7, 0.47, 1]], bay: [[1, 0.6, 0.3], [1, 0.3, 0.6], [0.4, 0.9, 1]], summit: [[1, 0.3, 0.2], [1, 0.7, 0.3], [0.9, 0.4, 1]], hollow: [[0.7, 0.7, 0.7], [1, 0.15, 0.1], [0.5, 0.8, 0.5]], zero: [[1, 0.6, 0.25], [0.9, 0.8, 0.6], [1, 0.3, 0.15]] }[to]; }
+function warpColors(to) { return { space: [[0.65, 0.8, 1], [1, 1, 1], [0.7, 0.45, 1]], planet: [[1, 0.5, 0.2], [1, 0.2, 0.55], [1, 0.82, 0.3]], city: [[0.22, 0.9, 1], [1, 0.18, 0.56], [0.7, 0.47, 1]], bay: [[1, 0.6, 0.3], [1, 0.3, 0.6], [0.4, 0.9, 1]], summit: [[1, 0.3, 0.2], [1, 0.7, 0.3], [0.9, 0.4, 1]], hollow: [[0.7, 0.7, 0.7], [1, 0.15, 0.1], [0.5, 0.8, 0.5]], zero: [[1, 0.6, 0.25], [0.9, 0.8, 0.6], [1, 0.3, 0.15]], abyss: [[0.1, 0.9, 0.8], [0.3, 0.6, 1], [0.7, 1, 0.95]] }[to]; }
 function warpTick(dt, speed, to) {
   const C = warpColors(to), len = Math.min(90, 3 + speed * 0.06);
   for (let i = 0; i < WARP.n; i++) { const s = WARP.seed[i]; s.z += speed * dt; if (s.z > 2) s.z -= 640;
@@ -612,24 +612,27 @@ const ZONE_SHOTS = [
   ['hollow', 'Hollow square', [0, 6, 34], [0, 6, -12], 58], ['hollow', 'Mansion gate', [10, 21, -50], [0, 25, -92], 58], ['hollow', 'Graveyard', [18, 4.5, 15], [45, 1.2, 8], 58],
   ['hollow', 'Church', [30, 5, 3], [42, 17, -20], 60], ['hollow', 'Castle woods', [-40, 8, -16], [-110, 42, -60], 55], ['hollow', 'Bus stop', [-4, 3, 52], [9.6, 2, 44], 55],
   ['zero', 'Firebase', [0, 6.5, 20], [0, 6, -12], 62], ['zero', 'Operator vault', [-8.5, 4.6, 9], [-21, 4.6, 9], 52], ['zero', 'Overlook', [-28, 15, 28], [6, 2, -16], 60], ['zero', 'Airfield', [20, 4, 7], [36, 2.5, -6], 55],
-  ['zero', 'Ruins', [-38, 3, 14], [-72, 8, -8], 58], ['zero', 'Tank line', [0, 4.5, -56], [0, 2.2, -40], 55], ['zero', 'Supply drop', [38, 4, 60], [24, 7, 38], 55], ['zero', 'Truck depot', [-4, 3, 74], [8, 2, 50], 55], ['zero', 'The circle', [0, 120, 215], [0, 0, -40], 62]];
+  ['zero', 'Ruins', [-38, 3, 14], [-72, 8, -8], 58], ['zero', 'Tank line', [0, 4.5, -56], [0, 2.2, -40], 55], ['zero', 'Supply drop', [38, 4, 60], [24, 7, 38], 55], ['zero', 'Truck depot', [-4, 3, 74], [8, 2, 50], 55], ['zero', 'The circle', [0, 120, 215], [0, 0, -40], 62],
+  ['abyss', 'Abyss window', [0, 2.2, 4], [0, 1.5, -40], 60], ['abyss', 'Dark room', [0, 2.4, 18], [0, 3.9, 33], 62], ['abyss', 'Trench', [-30, 6, -18], [10, -25, -70], 60], ['abyss', 'Kraken', [14, -28, -40], [34, -48, -70], 58],
+  ['abyss', 'Bunker outside', [-34, 10, -30], [0, 3, 10], 58], ['abyss', 'Seafloor', [30, 4, 44], [0, 4, 20], 58]];
 const ZONE_FOCUS = [['Space main screen', 'SCREEN_GAMEPLAY_SPACE'], ['Space cam', 'SCREEN_LIVECAM_SPACE'], ['Space chat', 'SCREEN_CHAT_SPACE'], ['Space commands', 'SCREEN_COMMANDS_SPACE'],
   ['Planet main screen', 'SCREEN_GAMEPLAY_PLANET'], ['Planet cam', 'SCREEN_LIVECAM_PLANET'], ['Planet chat', 'SCREEN_CHAT_PLANET'], ['Planet commands', 'SCREEN_COMMANDS_PLANET'],
   ['Bay main screen', 'SCREEN_GAMEPLAY_BAY'], ['Bay cam', 'SCREEN_LIVECAM_BAY'], ['Bay chat', 'SCREEN_CHAT_BAY'], ['Bay commands', 'SCREEN_COMMANDS_BAY'],
   ['Summit main screen', 'SCREEN_GAMEPLAY_SUMMIT'], ['Summit cam', 'SCREEN_LIVECAM_SUMMIT'], ['Summit chat', 'SCREEN_CHAT_SUMMIT'], ['Summit commands', 'SCREEN_COMMANDS_SUMMIT'],
   ['Hollow main screen', 'SCREEN_GAMEPLAY_HOLLOW'], ['Hollow cam', 'SCREEN_LIVECAM_HOLLOW'], ['Hollow chat', 'SCREEN_CHAT_HOLLOW'], ['Hollow commands', 'SCREEN_COMMANDS_HOLLOW'],
-  ['Zero main screen', 'SCREEN_GAMEPLAY_ZERO'], ['Zero cam', 'SCREEN_LIVECAM_ZERO'], ['Zero chat', 'SCREEN_CHAT_ZERO'], ['Zero commands', 'SCREEN_COMMANDS_ZERO'], ['Operator Vault', 'SCREEN_VAULT_ZERO']];
+  ['Zero main screen', 'SCREEN_GAMEPLAY_ZERO'], ['Zero cam', 'SCREEN_LIVECAM_ZERO'], ['Zero chat', 'SCREEN_CHAT_ZERO'], ['Zero commands', 'SCREEN_COMMANDS_ZERO'], ['Operator Vault', 'SCREEN_VAULT_ZERO'],
+  ['Abyss main screen', 'SCREEN_GAMEPLAY_ABYSS'], ['Abyss cam', 'SCREEN_LIVECAM_ABYSS'], ['Abyss chat', 'SCREEN_CHAT_ABYSS'], ['Abyss commands', 'SCREEN_COMMANDS_ABYSS']];
 function buildZones() {
-  zPlanetTextures(); buildSpace(); buildPlanet(); buildBay(); buildHarbor(); buildSummit(); buildHollow(); buildZero();
+  zPlanetTextures(); buildSpace(); buildPlanet(); buildBay(); buildHarbor(); buildSummit(); buildHollow(); buildZero(); buildAbyss();
   ZONE_SHOTS.forEach(([zone, label, p, l, fov]) => { const pos = new THREE.Vector3(...p); shots.push({ name: 'ZONE', zone, label, pos, quat: lookQuat(pos, new THREE.Vector3(...l)), fov }); });
   ZONE_FOCUS.forEach(f => FOCUS.push(f));
 }
 function zoneOrbit() {
-  const C = ZONES.cur === 'space' ? { c: new THREE.Vector3(0, 4, 2), r: 29, h: 7.5, look: 4.5 } : ZONES.cur === 'bay' ? { c: new THREE.Vector3(0, 3, 2), r: 46, h: 9, look: 7 } : ZONES.cur === 'summit' ? { c: new THREE.Vector3(0, 2, -4), r: 40, h: 12, look: 5 } : ZONES.cur === 'hollow' ? { c: new THREE.Vector3(0, 2, -2), r: 26, h: 7.5, look: 5 } : ZONES.cur === 'zero' ? { c: new THREE.Vector3(0, 2, -2), r: 44, h: 12, look: 5 } : { c: new THREE.Vector3(0, 0, -2), r: 36, h: 8.5, look: 11 };
+  const C = ZONES.cur === 'space' ? { c: new THREE.Vector3(0, 4, 2), r: 29, h: 7.5, look: 4.5 } : ZONES.cur === 'bay' ? { c: new THREE.Vector3(0, 3, 2), r: 46, h: 9, look: 7 } : ZONES.cur === 'summit' ? { c: new THREE.Vector3(0, 2, -4), r: 40, h: 12, look: 5 } : ZONES.cur === 'hollow' ? { c: new THREE.Vector3(0, 2, -2), r: 26, h: 7.5, look: 5 } : ZONES.cur === 'zero' ? { c: new THREE.Vector3(0, 2, -2), r: 44, h: 12, look: 5 } : ZONES.cur === 'abyss' ? { c: new THREE.Vector3(0, 0, -20), r: 40, h: 8, look: 0 } : { c: new THREE.Vector3(0, 0, -2), r: 36, h: 8.5, look: 11 };
   return { c: C.c, r: C.r, h: C.h, look: C.look, a: Math.atan2(cam.position.x - C.c.x, cam.position.z - C.c.z) };
 }
 function setZone(z) {
-  ZONES.cur = z; renderPass.scene = z === 'space' ? SP.scene : z === 'planet' ? PL.scene : z === 'bay' ? BAY.scene : z === 'summit' ? SM.scene : z === 'hollow' ? HW.scene : z === 'zero' ? ZZ.scene : scene; renderPass.camera = cam;
+  ZONES.cur = z; renderPass.scene = z === 'space' ? SP.scene : z === 'planet' ? PL.scene : z === 'bay' ? BAY.scene : z === 'summit' ? SM.scene : z === 'hollow' ? HW.scene : z === 'zero' ? ZZ.scene : z === 'abyss' ? AB.scene : scene; renderPass.camera = cam;
   document.body.dataset.zone = z;
 }
 const TR = { on: false };
@@ -640,8 +643,8 @@ function travel(to, shot) {
     mode: from === 'city' && to === 'bay' ? 'boatOut' : from === 'bay' && to === 'city' ? 'boatIn' : from === 'city' && to === 'summit' ? 'heliOut' : from === 'summit' && to === 'city' ? 'heliIn' : from === 'city' && to === 'hollow' ? 'busOut' : from === 'hollow' && to === 'city' ? 'busIn' : from === 'city' && to === 'zero' ? 'truckOut' : from === 'zero' && to === 'city' ? 'truckIn' : from === 'space' && to === 'planet' ? 'dive' : from === 'space' ? 'forward' : 'up',
     p0: cam.position.clone(), q0: cam.quaternion.clone(), f0: cam.fov });
   if (!/^(boat|heli|bus|truck)/.test(TR.mode)) whoosh(TR.mode === 'dive' ? 4.6 : 3.8);
-  toast({ space: 'Launching to space...', planet: from === 'space' ? 'Diving to planet Lucida...' : 'Flying to planet Lucida...', bay: from === 'city' ? 'Heading to the boats... next stop Lucid Bay' : 'Flying to Lucid Bay...', summit: from === 'city' ? 'Your helicopter is here... next stop Crimson Summit' : 'Flying to Crimson Summit...', hollow: from === 'city' ? 'The last bus to Ashen Hollow is arriving...' : 'Drifting into Ashen Hollow...', zero: from === 'city' ? 'Convoy inbound... next stop Zone Zero' : 'Dropping into Zone Zero...',
-    city: from === 'bay' ? 'Boating back to Lucid State City...' : from === 'summit' ? 'Flying the helicopter back to the city...' : from === 'hollow' ? 'Catching the bus out of Ashen Hollow...' : from === 'zero' ? 'Convoy rolling back to the city...' : 'Heading back to Lucid State City...' }[to]);
+  toast({ space: 'Launching to space...', planet: from === 'space' ? 'Diving to planet Lucida...' : 'Flying to planet Lucida...', bay: from === 'city' ? 'Heading to the boats... next stop Lucid Bay' : 'Flying to Lucid Bay...', summit: from === 'city' ? 'Your helicopter is here... next stop Crimson Summit' : 'Flying to Crimson Summit...', hollow: from === 'city' ? 'The last bus to Ashen Hollow is arriving...' : 'Drifting into Ashen Hollow...', zero: from === 'city' ? 'Convoy inbound... next stop Zone Zero' : 'Dropping into Zone Zero...', abyss: 'Diving to The Abyss... LSC Deep Station, depth 1,140 m',
+    city: from === 'bay' ? 'Boating back to Lucid State City...' : from === 'summit' ? 'Flying the helicopter back to the city...' : from === 'hollow' ? 'Catching the bus out of Ashen Hollow...' : from === 'zero' ? 'Convoy rolling back to the city...' : from === 'abyss' ? 'Surfacing... back to Lucid State City' : 'Heading back to Lucid State City...' }[to]);
   setTimeout(postState, 50);
 }
 function trTick(dt, t) {
@@ -659,7 +662,7 @@ function trTick(dt, t) {
     else { const c = SP.luc.position, tgt = c.clone().add(TR.p0.clone().sub(c).normalize().multiplyScalar(126)), e = k * k * k;
       cam.position.copy(TR.p0).lerp(tgt, e); cam.quaternion.slerp(lookQuat(cam.position, c), Math.min(1, dt * 2.5)); }
     cam.fov = TR.f0 + (88 - TR.f0) * k * k; cam.updateProjectionMatrix(); bloom.strength = 0.9 + k * 1.4;
-    if (ZONES.cur === 'space') spaceTick(dt, t); else if (ZONES.cur === 'planet') planetTick(dt, t); else if (ZONES.cur === 'bay') bayTick(dt, t); else if (ZONES.cur === 'summit') summitTick(dt, t); else if (ZONES.cur === 'hollow') hollowTick(dt, t); else if (ZONES.cur === 'zero') zeroTick(dt, t);
+    if (ZONES.cur === 'space') spaceTick(dt, t); else if (ZONES.cur === 'planet') planetTick(dt, t); else if (ZONES.cur === 'bay') bayTick(dt, t); else if (ZONES.cur === 'summit') summitTick(dt, t); else if (ZONES.cur === 'hollow') hollowTick(dt, t); else if (ZONES.cur === 'zero') zeroTick(dt, t); else if (ZONES.cur === 'abyss') abyssTick(dt, t);
     return true;
   }
   if (TR.t < A + W) {                                     // warp tunnel
@@ -669,7 +672,7 @@ function trTick(dt, t) {
   // arrive
   flash(0.95, 1.1); setZone(TR.to); TR.on = false; const s = TR.shot; bloom.strength = 1.2;
   if (s.walk || s.follow || s.orbit) { if (TR.to !== 'city') { cam.position.set(0, 10, 40); } startMove(s); }
-  else { const back = new THREE.Vector3(0, 0, 1).applyQuaternion(s.quat), start = TR.to === 'planet' ? new THREE.Vector3(0, 150, 230) : TR.to === 'bay' ? new THREE.Vector3(20, 70, 170) : TR.to === 'summit' ? new THREE.Vector3(-60, 60, 120) : TR.to === 'hollow' ? new THREE.Vector3(20, 30, 90) : TR.to === 'zero' ? new THREE.Vector3(40, 60, 140) : TR.to === 'space' ? s.pos.clone().addScaledVector(back, 110).add(new THREE.Vector3(0, 30, 0)) : s.pos.clone().addScaledVector(back, 50).add(new THREE.Vector3(0, 90, 0));
+  else { const back = new THREE.Vector3(0, 0, 1).applyQuaternion(s.quat), start = TR.to === 'planet' ? new THREE.Vector3(0, 150, 230) : TR.to === 'bay' ? new THREE.Vector3(20, 70, 170) : TR.to === 'summit' ? new THREE.Vector3(-60, 60, 120) : TR.to === 'hollow' ? new THREE.Vector3(20, 30, 90) : TR.to === 'zero' ? new THREE.Vector3(40, 60, 140) : TR.to === 'abyss' ? new THREE.Vector3(10, 70, -40) : TR.to === 'space' ? s.pos.clone().addScaledVector(back, 110).add(new THREE.Vector3(0, 30, 0)) : s.pos.clone().addScaledVector(back, 50).add(new THREE.Vector3(0, 90, 0));
     cam.position.copy(start); cam.quaternion.copy(lookQuat(start, s.pos.clone().lerp(new THREE.Vector3(0, 0, 0), TR.to === 'city' ? 0 : 0.5))); cam.fov = 75; cam.updateProjectionMatrix();
     fly = { fromP: start, fromQ: cam.quaternion.clone(), fromF: 75, to: s, t: 0, dur: TR.to === 'city' ? 3.0 : 3.4 }; hold = null; }
   setTimeout(postState, 50); return false;
@@ -677,7 +680,7 @@ function trTick(dt, t) {
 function zoneTick(dt, t) {
   if (SHOW.mode !== 'live' && !(SHOW.mode === 'intro' && SHOW.style !== 'neon') && (ZONES.cur !== 'city' || TR.on)) { if (TR.on) { TR.on = false; renderPass.camera = cam; } setZone('city'); }      // intro / BRB / outro always play in the city
   harborTick(dt, t); cityHeliTick(dt, t);
-  if (!TR.on) { if (ZONES.cur === 'space') spaceTick(dt, t); else if (ZONES.cur === 'planet') planetTick(dt, t); else if (ZONES.cur === 'bay') bayTick(dt, t); else if (ZONES.cur === 'summit') summitTick(dt, t); else if (ZONES.cur === 'hollow') hollowTick(dt, t); else if (ZONES.cur === 'zero') zeroTick(dt, t); }
+  if (!TR.on) { if (ZONES.cur === 'space') spaceTick(dt, t); else if (ZONES.cur === 'planet') planetTick(dt, t); else if (ZONES.cur === 'bay') bayTick(dt, t); else if (ZONES.cur === 'summit') summitTick(dt, t); else if (ZONES.cur === 'hollow') hollowTick(dt, t); else if (ZONES.cur === 'zero') zeroTick(dt, t); else if (ZONES.cur === 'abyss') abyssTick(dt, t); }
 }
 // ---------------------------------------------------------------- LUCID BAY: sunset neon beach district (floating stage, boats, Ocean Drive), reached by speedboat from the city harbor
 const waveH = (x, z, t, a) => (Math.sin(x * 0.08 + t * 1.1) * 0.35 + Math.sin(z * 0.11 - t * 1.3) * 0.3 + Math.sin((x + z) * 0.21 + t * 2.1) * 0.12) * (a === undefined ? 1 : a);
@@ -1872,6 +1875,217 @@ function truckTripTick(dt, t) {
   return true;
 }
 
+// ---------------------------------------------------------------- THE ABYSS: LSC Deep Station, an underwater bunker on the edge of a trench (calm, eerie water, sea life and giant monsters; the screens live in the Dark Room)
+const AB = { scene: new THREE.Scene(), schools: [], jellies: [], mantas: [], snow: null, shafts: [], bubbles: [], viewers: {}, lights: [], caust: [], eyes: [] };
+const abM = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.85 }, o || {}));
+const abGlow = (c, o) => new THREE.MeshBasicMaterial(Object.assign({ color: c, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }, o || {}));
+function abTerrainH(x, z) {                       // seafloor height: soft dunes, flat pad for the bunker, the trench drops away to the north
+  const n = AB.noise || (AB.noise = zNoise(31));
+  let h = (zFbm(n, x * 0.018, z * 0.018, 4) - 0.5) * 6 + (zFbm(n, x * 0.07 + 9, z * 0.07, 2) - 0.5) * 1.2;
+  const pad = Math.max(0, 1 - Math.max(0, Math.hypot(x, z - 14) - 26) / 18); h = h * (1 - pad) - 0.6 * pad;
+  const tr = z < -14 ? Math.min(1, (-14 - z) / 30) : 0; h -= tr * tr * (58 + Math.sin(x * 0.03) * 10);
+  return h;
+}
+function abCaustTex() {
+  const [c, t] = zCanvasTex(512, 512), x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 512, 512);
+  x.globalCompositeOperation = 'lighter'; const R = zRand(77);
+  for (let i = 0; i < 90; i++) { x.strokeStyle = `rgba(120,255,230,${0.05 + R() * 0.1})`; x.lineWidth = 1 + R() * 3; x.beginPath(); let px = R() * 512, py = R() * 512; x.moveTo(px, py);
+    for (let k = 0; k < 6; k++) { px += (R() - 0.5) * 120; py += (R() - 0.5) * 120; x.quadraticCurveTo(px + (R() - 0.5) * 60, py + (R() - 0.5) * 60, px, py); } x.stroke(); }
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; return t;
+}
+function abFish(col, size) {
+  const g = new THREE.Group(), m = abM(col, { roughness: 0.4, metalness: 0.5, emissive: new THREE.Color(col).multiplyScalar(0.25) });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), m); body.scale.set(0.35, 0.55, 1.1); g.add(body);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 4), m); tail.rotation.x = -Math.PI / 2; tail.position.z = -0.75; tail.scale.set(0.15, 1, 1); g.add(tail); g.userData.tail = tail;
+  g.scale.setScalar(size); return g;
+}
+function abJelly(col) {
+  const g = new THREE.Group(), bell = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), abGlow(col, { opacity: 0.45, side: THREE.DoubleSide }));
+  g.add(bell); const core = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 8), abGlow(col, { opacity: 0.9 })); core.position.y = 0.25; g.add(core);
+  const tents = []; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, pts = []; for (let k = 0; k < 10; k++) pts.push(new THREE.Vector3(Math.cos(a) * 0.7, -k * 0.55, Math.sin(a) * 0.7));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts), ln = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })); g.add(ln); tents.push({ ln, a }); }
+  g.userData = { bell, tents }; return g;
+}
+function abManta() {
+  const g = new THREE.Group(), m = abM(0x16222c, { roughness: 0.6 }), belly = abM(0xb8c8cc, { roughness: 0.7 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.4, 12, 8), m); body.scale.set(1, 0.3, 1.6); g.add(body);
+  const wingGeo = new THREE.BufferGeometry(); wingGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 1.6, 4.8, 0, -0.4, 0, 0, -1.6], 3)); wingGeo.computeVertexNormals();
+  const wl = new THREE.Mesh(wingGeo, new THREE.MeshStandardMaterial({ color: 0x16222c, roughness: 0.6, side: THREE.DoubleSide })), wr = wl.clone(); wr.scale.x = -1; g.add(wl, wr);
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.08, 4, 5), m); tail.rotation.x = Math.PI / 2; tail.position.z = -3.4; g.add(tail);
+  const under = new THREE.Mesh(new THREE.CircleGeometry(1.1, 12), belly); under.rotation.x = Math.PI / 2; under.position.y = -0.38; under.scale.y = 1.5; g.add(under);
+  g.userData = { wl, wr }; return g;
+}
+function abSerpent() {                              // the leviathan: a long glowing-spined sea serpent
+  const g = new THREE.Group(), N = 46, segs = [], skin = abM(0x0c1a1c, { roughness: 0.5, metalness: 0.3 }), glow = abGlow(0x29ffd8, { opacity: 0.9 });
+  for (let i = 0; i < N; i++) { const r = 2.6 * Math.sin(Math.min(1, (i + 3) / (N * 0.25)) * Math.PI / 2) * (1 - i / N * 0.85) + 0.25;
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), skin); s.scale.z = 1.6; g.add(s);
+    if (i % 2 === 0 && i > 2 && i < N - 4) { const sp = new THREE.Mesh(new THREE.ConeGeometry(r * 0.25, r * 1.1, 5), glow); sp.position.y = r * 1.05; s.add(sp); }
+    segs.push({ m: s, r }); }
+  const head = segs[0].m, jaw = new THREE.Mesh(new THREE.ConeGeometry(1.6, 4.2, 8), skin); jaw.rotation.x = Math.PI / 2; jaw.position.z = 2.8; head.add(jaw);
+  [-1, 1].forEach(sx => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), abGlow(0xffd23a, { opacity: 1 })); e.position.set(sx * 1.35, 0.7, 1.4); head.add(e); AB.eyes.push(e); });
+  g.userData = { segs, trail: [] }; return g;
+}
+function abSquid() {                                // giant squid lurking in the trench
+  const g = new THREE.Group(), skin = abM(0x4a1622, { roughness: 0.55, emissive: 0x1a0408 });
+  const mantle = new THREE.Mesh(new THREE.ConeGeometry(4.2, 18, 14), skin); mantle.position.y = 10; g.add(mantle);
+  const headM = new THREE.Mesh(new THREE.SphereGeometry(4.4, 16, 12), skin); headM.scale.y = 0.8; g.add(headM);
+  [-1, 1].forEach(sx => { const e = new THREE.Mesh(new THREE.SphereGeometry(1.3, 14, 10), abGlow(0xff5a2a, { opacity: 1 })); e.position.set(sx * 3.6, 0.6, 1.6); g.add(e); AB.eyes.push(e); });
+  const arms = []; for (let a = 0; a < 10; a++) { const ang = a / 10 * Math.PI * 2, chain = []; let parent = g;
+    for (let k = 0; k < 12; k++) { const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.9 * (1 - k / 13) + 0.1, 1.0 * (1 - k / 13) + 0.12, 2.6, 7), skin);
+      seg.geometry.translate(0, -1.3, 0); if (k === 0) { seg.position.set(Math.cos(ang) * 2.6, -2.5, Math.sin(ang) * 2.6); seg.rotation.set(Math.sin(ang) * 0.5, 0, -Math.cos(ang) * 0.5); } else seg.position.y = -2.5;
+      parent.add(seg); chain.push(seg); parent = seg; }
+    arms.push({ chain, ph: a * 0.7 }); }
+  g.userData = { arms }; return g;
+}
+function abWhale() {
+  const g = new THREE.Group(), m = abM(0x0a1418, { roughness: 0.8 });
+  const b = new THREE.Mesh(new THREE.SphereGeometry(6, 18, 12), m); b.scale.set(1, 0.8, 3.6); g.add(b);
+  const t = new THREE.Mesh(new THREE.BoxGeometry(12, 0.5, 4), m); t.position.z = -22; g.add(t); g.userData.tail = t;
+  [-1, 1].forEach(s => { const f = new THREE.Mesh(new THREE.BoxGeometry(8, 0.4, 3), m); f.position.set(s * 7, -2, 6); f.rotation.z = s * 0.4; g.add(f); });
+  return g;
+}
+function buildAbyss() {
+  const S = AB.scene, WATER = 0x021820; S.fog = new THREE.FogExp2(WATER, 0.017); S.background = new THREE.Color(WATER);
+  S.add(new THREE.HemisphereLight(0x3ac8c0, 0x02080a, 0.42)); const sun = new THREE.DirectionalLight(0x6ae6e0, 0.35); sun.position.set(20, 100, 10); S.add(sun);
+  // seafloor
+  { const g = new THREE.PlaneGeometry(700, 700, 200, 200); g.rotateX(-Math.PI / 2); const p = g.attributes.position, col = [];
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), h = abTerrainH(x, z); p.setY(i, h); const d = Math.max(0, Math.min(1, -h / 50)); col.push(0.32 - d * 0.25, 0.30 - d * 0.22, 0.24 - d * 0.16); }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
+    const sand = smTex(512, 512, x => { x.fillStyle = '#7a7466'; x.fillRect(0, 0, 512, 512); const R = zRand(5); for (let i = 0; i < 4000; i++) { const v = 90 + R() * 70 | 0; x.fillStyle = `rgba(${v},${v - 6},${v - 18},0.5)`; x.fillRect(R() * 512, R() * 512, 2, 2); } }, [70, 70]);
+    const floor = new THREE.Mesh(g, abM(0xffffff, { map: sand, vertexColors: true, roughness: 1 })); floor.name = 'AB_floor'; S.add(floor); AB.floor = floor;
+    const ct = abCaustTex(); ct.repeat.set(40, 40); const cm = new THREE.Mesh(g.clone(), new THREE.MeshBasicMaterial({ map: ct, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+    cm.position.y = 0.05; S.add(cm); AB.caust.push(ct); }
+  // rocks, kelp, glowing coral
+  const R = zRand(12), rockM = abM(0x2a3034, { roughness: 1 }), kelpM = new THREE.MeshStandardMaterial({ color: 0x1d5a3a, roughness: 0.8, side: THREE.DoubleSide, emissive: 0x062418 });
+  AB.kelp = [];
+  for (let i = 0; i < 140; i++) { const a = R() * Math.PI * 2, d = 34 + R() * 150, x = Math.cos(a) * d, z = Math.sin(a) * d + 14; if (z < -20 && Math.abs(x) < 120) continue;
+    const y = abTerrainH(x, z);
+    if (i % 3 === 0) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(1 + R() * 4, 0), rockM); r.position.set(x, y + 0.5, z); r.rotation.set(R() * 3, R() * 3, 0); r.scale.y = 0.6; S.add(r); }
+    else { const h = 6 + R() * 12, k = new THREE.Mesh(new THREE.PlaneGeometry(0.8, h, 1, 8), kelpM); k.geometry.translate(0, h / 2, 0); k.position.set(x, y, z); k.rotation.y = R() * 3; S.add(k); AB.kelp.push({ k, ph: R() * 7, pos: k.geometry.attributes.position.array.slice() }); } }
+  const coralCols = [0xff3ea5, 0x29e7ff, 0xb28cff, 0xffb347, 0x7dffb0];
+  for (let i = 0; i < 70; i++) { const a = R() * Math.PI * 2, d = 26 + R() * 60, x = Math.cos(a) * d, z = Math.sin(a) * d + 14; if (z < -12) continue; const y = abTerrainH(x, z), c = coralCols[i % 5];
+    const g = new THREE.Group(); g.position.set(x, y, z); S.add(g);
+    for (let k = 0; k < 4; k++) { const br = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.18, 1.2 + R() * 1.4, 5), abM(c, { emissive: c, emissiveIntensity: 0.9 })); br.position.set((R() - 0.5) * 0.8, 0.6, (R() - 0.5) * 0.8); br.rotation.set((R() - 0.5) * 0.9, 0, (R() - 0.5) * 0.9); g.add(br); } }
+  // light shafts from far above
+  for (let i = 0; i < 9; i++) { const sh = new THREE.Mesh(new THREE.CylinderGeometry(2 + R() * 3, 9 + R() * 6, 120, 16, 1, true), abGlow(0x6af2e0, { opacity: 0.035, side: THREE.DoubleSide, fog: false }));
+    sh.position.set(-80 + R() * 160, 60, -60 + R() * 140); sh.rotation.z = (R() - 0.5) * 0.4; S.add(sh); AB.shafts.push({ m: sh, ph: R() * 7 }); }
+  // marine snow
+  { const N = 1600, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) { pos[i * 3] = (R() - 0.5) * 160; pos[i * 3 + 1] = R() * 60 - 10; pos[i * 3 + 2] = (R() - 0.5) * 160; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    AB.snow = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xcff6f0, size: 0.12, transparent: true, opacity: 0.6, depthWrite: false })); AB.snow.frustumCulled = false; S.add(AB.snow); }
+  { const N = 900, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) { pos[i * 3] = (R() - 0.5) * 90; pos[i * 3 + 1] = -8 + R() * 30; pos[i * 3 + 2] = -8 - R() * 60; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    AB.snow2 = new THREE.Points(g, AB.snow.material); AB.snow2.frustumCulled = false; S.add(AB.snow2); }      // the snow you see through the window
+  // ---- the bunker: observation gallery (z -6..6), corridor (z 6..16), Dark Room (z 16..34)
+  const steel = abM(0x2c3236, { roughness: 0.45, metalness: 0.7 }), hull = abM(0x1c2226, { roughness: 0.55, metalness: 0.6 }), dark = abM(0x050608, { roughness: 0.9 }), grate = abM(0x3a4044, { roughness: 0.5, metalness: 0.8 });
+  const box = (w, h, d, x, y, z, m, nm) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); if (nm) b.name = nm; S.add(b); return b; };
+  const strip = (w, h, d, x, y, z, c) => box(w, h, d, x, y, z, new THREE.MeshBasicMaterial({ color: c }));
+  // gallery
+  box(32, 0.4, 13, 0, -0.2, 0, grate, 'AB_gallery_floor'); box(32, 0.4, 13, 0, 6.2, 0, hull);
+  box(0.6, 6.4, 13, -16, 3, 0, hull); box(0.6, 6.4, 13, 16, 3, 0, hull);
+  box(13.8, 6.4, 0.6, -9.1, 3, 6.3, hull); box(13.8, 6.4, 0.6, 9.1, 3, 6.3, hull); box(4.4, 2.6, 0.6, 0, 5.1, 6.3, hull);
+  { const glass = new THREE.Mesh(new THREE.BoxGeometry(31, 5.6, 0.3), new THREE.MeshStandardMaterial({ color: 0x2a6a70, transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.9, depthWrite: false }));
+    glass.position.set(0, 3, -6.3); glass.name = 'AB_window'; glass.userData.solid = true; S.add(glass);
+    for (let x = -15; x <= 15; x += 3.75) box(0.35, 6, 0.6, x, 3, -6.3, steel);
+    box(32, 0.6, 0.8, 0, 0.2, -6.3, steel); box(32, 0.6, 0.8, 0, 6, -6.3, steel); strip(31, 0.08, 0.1, 0, 0.55, -5.9, 0x1fd6c4); }
+  for (let x = -12; x <= 12; x += 6) { box(3.6, 0.5, 1.2, x, 0.45, 1.5, abM(0x1a1f24)); }
+  strip(31, 0.06, 0.06, 0, 6.0, 5.9, 0x1fd6c4); strip(0.06, 0.06, 12, -15.6, 5.95, 0, 0x1fd6c4); strip(0.06, 0.06, 12, 15.6, 5.95, 0, 0x1fd6c4);
+  { const s = zSign('LSC DEEP STATION', 'THE ABYSS  ·  DEPTH 1,140 M', '#1fd6c4', 9); s.position.set(0, 5.1, 5.95); s.rotation.y = Math.PI; S.add(s); }
+  // corridor with red emergency light and pipes
+  box(4.6, 0.4, 10.4, 0, -0.2, 11, grate); box(4.6, 0.4, 10.4, 0, 3.8, 11, hull); box(0.4, 4, 10.4, -2.3, 1.8, 11, hull); box(0.4, 4, 10.4, 2.3, 1.8, 11, hull);
+  for (let z = 7; z <= 15; z += 2) { strip(0.06, 0.4, 0.06, -2.05, 3.3, z, 0xff2a2a); strip(0.06, 0.4, 0.06, 2.05, 3.3, z, 0xff2a2a); }
+  [-1.8, 1.8].forEach(x => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 10.4, 8), steel); p.rotation.x = Math.PI / 2; p.position.set(x, 3.2, 11); S.add(p); });
+  { const L = new THREE.PointLight(0xff2a2a, 0.9, 12); L.position.set(0, 3, 11); S.add(L); AB.lights.push({ L, base: 0.9, flick: true }); }
+  // the Dark Room: black walls, dim rim light, all the screens
+  box(22.4, 0.4, 18.4, 0, -0.2, 25, dark, 'AB_dark_floor'); box(22.4, 0.4, 18.4, 0, 7.2, 25, dark);
+  box(0.6, 7.4, 18.4, -11.2, 3.5, 25, dark); box(0.6, 7.4, 18.4, 11.2, 3.5, 25, dark); box(22.4, 7.4, 0.6, 0, 3.5, 34.2, dark);
+  box(8.9, 7.4, 0.6, -6.75, 3.5, 15.8, dark); box(8.9, 7.4, 0.6, 6.75, 3.5, 15.8, dark); box(4.6, 3.6, 0.6, 0, 5.4, 15.8, dark);
+  strip(22, 0.05, 0.05, 0, 0.05, 33.8, 0x1fd6c4); strip(0.05, 0.05, 18, -10.85, 0.05, 25, 0xff2a2a); strip(0.05, 0.05, 18, 10.85, 0.05, 25, 0xff2a2a);
+  { const g = zScreen('GAMEPLAY', 'SCREEN_GAMEPLAY_ABYSS', 12.8, 7.2, 'abyss', 0x1fd6c4); g.position.set(0, 3.9, 33.4); g.rotation.y = Math.PI; S.add(g);
+    const c1 = zScreen('LIVECAM', 'SCREEN_LIVECAM_ABYSS', 5.6, 3.15, 'abyss', 0xff2a2a); c1.position.set(-10.3, 3.6, 28); c1.rotation.y = Math.PI / 2; S.add(c1);
+    const c2 = zScreen('CHAT', 'SCREEN_CHAT_ABYSS', 5.6, 3.15, 'abyss', 0xff2a2a); c2.position.set(10.3, 3.6, 28); c2.rotation.y = -Math.PI / 2; S.add(c2);
+    const c3 = zScreen('COMMANDS', 'SCREEN_COMMANDS_ABYSS', 4.8, 2.7, 'abyss', 0x1fd6c4); c3.position.set(-10.3, 3.2, 21); c3.rotation.y = Math.PI / 2; S.add(c3);
+    const s = zSign('THE DARK ROOM', 'LUCID STATE CITY  ·  LIVE FROM THE DEEP', '#ff2a2a', 8); s.position.set(0, 6.4, 33.85); s.rotation.y = Math.PI; S.add(s);
+    for (let r = 0; r < 3; r++) for (let x = -6; x <= 6; x += 3) box(2.2, 0.5, 0.9, x, 0.45, 22 + r * 2.4, abM(0x101216));
+    const L = new THREE.SpotLight(0x1fd6c4, 0.9, 30, 0.7, 0.8); L.position.set(0, 7, 20); L.target.position.set(0, 3, 33); S.add(L, L.target);
+    const L2 = new THREE.PointLight(0xff2a2a, 0.5, 16); L2.position.set(0, 1, 25); S.add(L2); AB.lights.push({ L: L2, base: 0.5, pulse: true }); }
+  // hull exterior: domes, portholes, floodlights, airlock, antenna
+  { const dome = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), hull); dome.position.set(0, 6.4, 25); dome.scale.set(1.25, 0.5, 1.05); S.add(dome);
+    const dome2 = dome.clone(); dome2.position.set(0, 6.4, 0); dome2.scale.set(1.8, 0.35, 0.75); S.add(dome2);
+    for (let z = 18; z <= 32; z += 4.5) [-11.55, 11.55].forEach(x => { const p = new THREE.Mesh(new THREE.CircleGeometry(0.7, 16), abGlow(0x1fd6c4, { opacity: 0.7 })); p.position.set(x, 4.5, z); p.rotation.y = x < 0 ? -Math.PI / 2 : Math.PI / 2; S.add(p); });
+    [[-17, 6.8, -7], [17, 6.8, -7], [-12, 8, 34], [12, 8, 34]].forEach(([x, y, z]) => { const L = new THREE.SpotLight(0xbff8ff, 1.2, 60, 0.45, 0.6); L.position.set(x, y, z); L.target.position.set(x * 1.6, -10, z < 0 ? -40 : 50); S.add(L, L.target);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(7, 40, 20, 1, true), abGlow(0xbff8ff, { opacity: 0.04, side: THREE.DoubleSide })); cone.geometry.translate(0, -20, 0); cone.position.set(x, y, z); cone.lookAt(x * 1.6, -10, z < 0 ? -40 : 50); cone.rotateX(-Math.PI / 2); S.add(cone);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), abGlow(0xffffff, { opacity: 1 })); lamp.position.set(x, y, z); S.add(lamp); });
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 14, 6), steel); ant.position.set(6, 15, 25); S.add(ant);
+    const bea = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), abGlow(0xff2a2a, { opacity: 1 })); bea.position.set(6, 22.2, 25); S.add(bea); AB.beacon = bea;
+    const lock = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 6, 18, 1, true), hull); lock.rotation.z = Math.PI / 2; lock.position.set(-19, 2.4, 0); S.add(lock); }
+  // vents with bubbles
+  for (let i = 0; i < 5; i++) { const x = -64 + i * 32, z = 50 + (i % 2) * 16, y = abTerrainH(x, z); const v = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3, 8), rockM); v.position.set(x, y + 1.2, z); S.add(v);
+    const N = 60, pos = new Float32Array(N * 3); for (let k = 0; k < N; k++) { pos[k * 3] = x + (R() - 0.5); pos[k * 3 + 1] = y + 2 + R() * 40; pos[k * 3 + 2] = z + (R() - 0.5); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const b = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xe0fffa, size: 0.35, transparent: true, opacity: 0.55, depthWrite: false }));
+    b.frustumCulled = false; S.add(b); AB.bubbles.push({ b, x, y, z }); }
+  // ---- sea life
+  const fishCols = [0x29e7ff, 0xffb347, 0xb28cff, 0x7dffb0, 0xff7aa8];
+  for (let s = 0; s < 6; s++) { const grp = new THREE.Group(); S.add(grp); const fish = [];
+    for (let i = 0; i < 34; i++) { const f = abFish(fishCols[s % 5], 0.6 + R() * 0.5); f.userData.off = new THREE.Vector3((R() - 0.5) * 7, (R() - 0.5) * 3.5, (R() - 0.5) * 7); f.userData.ph = R() * 7; grp.add(f); fish.push(f); }
+    AB.schools.push({ grp, fish, cx: (R() - 0.5) * 60, cz: -18 - R() * 40, r: 16 + R() * 18, y: 2 + R() * 10, sp: (0.12 + R() * 0.1) * (s % 2 ? 1 : -1), a: R() * 7 }); }
+  const jc = [0x29e7ff, 0xff3ea5, 0xb28cff, 0x7dffb0];
+  for (let i = 0; i < 18; i++) { const j = abJelly(jc[i % 4]); const s = 0.7 + R() * 1.4; j.scale.setScalar(s); j.position.set((R() - 0.5) * 90, -6 + R() * 22, -14 - R() * 50); S.add(j); AB.jellies.push({ j, base: j.position.clone(), ph: R() * 7, sp: 0.4 + R() * 0.4 }); }
+  for (let i = 0; i < 3; i++) { const m = abManta(); m.scale.setScalar(1.2 + R() * 0.6); S.add(m); AB.mantas.push({ m, r: 30 + i * 14, y: 10 + i * 5, a: i * 2.1, sp: 0.07 + i * 0.015 }); }
+  { const an = new THREE.Group(), body = new THREE.Mesh(new THREE.SphereGeometry(1.2, 14, 10), abM(0x1a1210, { roughness: 0.6 })); body.scale.set(1, 0.85, 1.3); an.add(body);
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.2, 0.6), abM(0xdcd2c0)); jaw.position.set(0, -0.3, 1.4); an.add(jaw);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 5), abM(0x1a1210)); rod.position.set(0, 1.6, 1); rod.rotation.x = 0.7; an.add(rod);
+    const lure = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), abGlow(0x9affea, { opacity: 1 })); lure.position.set(0, 2.4, 1.9); an.add(lure); const L = new THREE.PointLight(0x9affea, 1.2, 10); lure.add(L);
+    S.add(an); AB.angler = an; }
+  // ---- the monsters
+  AB.serpent = abSerpent(); S.add(AB.serpent);
+  AB.squid = abSquid(); AB.squid.position.set(34, -52, -70); AB.squid.rotation.x = -0.25; S.add(AB.squid);
+  AB.whale = abWhale(); S.add(AB.whale);
+}
+function abSerpentPath(u, t) {                    // a slow lazy loop through the trench that brushes past the window
+  const a = u * Math.PI * 2;
+  return new THREE.Vector3(Math.sin(a) * 58 + Math.sin(a * 3) * 6, -10 + Math.sin(a * 2 + 1) * 14 + Math.sin(t * 0.2) * 2, -48 + Math.cos(a) * 26 + Math.cos(a * 2) * 6);
+}
+function abyssTick(dt, t) {
+  const S = AB.scene; if (!AB.floor) return;
+  AB.caust.forEach(c => { c.offset.x = Math.sin(t * 0.13) * 0.4 + t * 0.008; c.offset.y = Math.cos(t * 0.11) * 0.4; });
+  AB.shafts.forEach(s => { s.m.material.opacity = 0.016 + 0.014 * (0.5 + 0.5 * Math.sin(t * 0.4 + s.ph)); s.m.rotation.z = Math.sin(t * 0.1 + s.ph) * 0.15; });
+  { const a = AB.snow.geometry.attributes.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * 0.25; if (y < -10) y = 50; a.setXYZ(i, a.getX(i) + Math.sin(t * 0.3 + i) * dt * 0.08, y, a.getZ(i)); } a.needsUpdate = true;
+    AB.snow.position.set(cam.position.x, 0, cam.position.z);
+    const cp = cam.position; AB.snow.visible = !(cp.y > -0.5 && cp.y < 7.6 && Math.abs(cp.x) < 16.4 && cp.z > -6.2 && cp.z < 34.6);
+    const b = AB.snow2.geometry.attributes.position; for (let i = 0; i < b.count; i++) { let y = b.getY(i) - dt * 0.25; if (y < -8) y = 22; b.setY(i, y); } b.needsUpdate = true; }
+  AB.bubbles.forEach(B => { const a = B.b.geometry.attributes.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) + dt * (2 + (i % 5) * 0.4); if (y > B.y + 44) y = B.y + 2; a.setXYZ(i, B.x + Math.sin(t * 2 + i) * 0.35, y, B.z + Math.cos(t * 1.7 + i) * 0.35); } a.needsUpdate = true; });
+  AB.kelp.forEach(K => { const p = K.k.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const y = K.pos[i * 3 + 1]; p.setX(i, K.pos[i * 3] + Math.sin(t * 0.7 + K.ph + y * 0.3) * y * 0.06); } p.needsUpdate = true; });
+  AB.schools.forEach(s => { s.a += dt * s.sp; const cx = s.cx + Math.cos(s.a) * s.r, cz = s.cz + Math.sin(s.a) * s.r, y = s.y + Math.sin(t * 0.3 + s.a) * 3;
+    s.grp.position.set(cx, y, cz); s.grp.rotation.y = -s.a + (s.sp > 0 ? Math.PI : 0);
+    s.fish.forEach((f, i) => { const o = f.userData.off; f.position.set(o.x + Math.sin(t * 0.9 + f.userData.ph) * 0.8, o.y + Math.sin(t * 1.3 + i) * 0.4, o.z + Math.cos(t * 0.8 + f.userData.ph) * 0.8); f.userData.tail.rotation.y = Math.sin(t * 9 + i) * 0.5; }); });
+  AB.jellies.forEach(J => { const p = 0.5 + 0.5 * Math.sin(t * J.sp * 3 + J.ph); J.j.userData.bell.scale.set(1 + p * 0.18, 1 - p * 0.25, 1 + p * 0.18);
+    J.j.position.set(J.base.x + Math.sin(t * 0.07 + J.ph) * 4, J.base.y + Math.sin(t * J.sp * 0.5 + J.ph) * 4 + p * 0.4, J.base.z + Math.cos(t * 0.06 + J.ph) * 4);
+    J.j.userData.tents.forEach((T, k) => { const a = T.ln.geometry.attributes.position; for (let i = 1; i < a.count; i++) a.setX(i, Math.cos(T.a) * 0.7 + Math.sin(t * 1.2 + i * 0.6 + k) * i * 0.05); a.needsUpdate = true; }); });
+  AB.mantas.forEach(M => { M.a += dt * M.sp; const x = Math.cos(M.a) * M.r, z = -30 + Math.sin(M.a) * M.r * 0.7, y = M.y + Math.sin(t * 0.5 + M.a) * 3;
+    M.m.position.set(x, y, z); M.m.rotation.y = Math.atan2(-Math.sin(M.a) * M.r, Math.cos(M.a) * M.r * 0.7) + Math.PI / 2; const f = Math.sin(t * 1.6 + M.a) * 0.45;
+    M.m.userData.wl.rotation.z = f; M.m.userData.wr.rotation.z = -f; });
+  if (AB.angler) { AB.angler.position.set(-7 + Math.sin(t * 0.25) * 5, 2.6 + Math.sin(t * 0.6) * 0.6, -10.5 + Math.cos(t * 0.2) * 1.5); AB.angler.rotation.y = Math.cos(t * 0.25) > 0 ? Math.PI / 2 : -Math.PI / 2; }
+  // leviathan: head follows the path, the body trails behind it
+  { const sp = AB.serpent.userData, u = (t * 0.006) % 1, head = abSerpentPath(u, t); sp.trail.unshift(head); if (sp.trail.length > 400) sp.trail.length = 400;
+    sp.segs.forEach((s, i) => { const k = Math.min(sp.trail.length - 1, i * 5), p = sp.trail[k], q = sp.trail[Math.min(sp.trail.length - 1, k + 3)];
+      s.m.position.copy(p); if (p.distanceToSquared(q) > 1e-4) s.m.lookAt(q); s.m.rotateY(Math.PI); s.m.position.y += Math.sin(t * 2 - i * 0.35) * 0.25; }); }
+  // giant squid: arms curl and reach
+  AB.squid.userData.arms.forEach(A => A.chain.forEach((s, k) => { s.rotation.x = (k ? 0.22 : s.rotation.x) + (k ? Math.sin(t * 0.8 + A.ph + k * 0.5) * 0.18 : 0); s.rotation.z = k ? Math.cos(t * 0.6 + A.ph + k * 0.4) * 0.16 : s.rotation.z; }));
+  AB.squid.position.y = -52 + Math.sin(t * 0.15) * 5; AB.squid.rotation.y = Math.sin(t * 0.05) * 0.6;
+  AB.eyes.forEach((e, i) => { e.material.opacity = Math.sin(t * 0.37 + i) > 0.97 ? 0.1 : 1; });   // they blink
+  // a whale drifts past in the fog every couple of minutes
+  { const k = ((t * 0.006) % 1), x = -220 + k * 440; AB.whale.position.set(x, 30 + Math.sin(t * 0.1) * 4, -78); AB.whale.rotation.y = Math.PI / 2; AB.whale.userData.tail.rotation.x = Math.sin(t * 0.6) * 0.25; }
+  if (AB.beacon) AB.beacon.material.opacity = Math.sin(t * 3) > 0.4 ? 1 : 0.1;
+  AB.lights.forEach(l => { if (l.flick) l.L.intensity = l.base * (Math.random() < 0.02 ? 0.2 : 1); if (l.pulse) l.L.intensity = l.base * (0.6 + 0.4 * Math.sin(t * 1.3)); });
+  // viewers who typed !spawn show up as divers in glowing suits
+  if ((AB.syncT = (AB.syncT || 0) - dt) <= 0) { AB.syncT = 3; const live = new Set(spawned.map(w => w.user));
+    Object.keys(AB.viewers).forEach(u => { if (!live.has(u)) { S.remove(AB.viewers[u].o); delete AB.viewers[u]; } });
+    spawned.forEach(w => { if (AB.viewers[w.user]) return; const col = w.o.userData.col || '#1fd6c4';
+      const p = smPerson(new THREE.Color(col).getHex(), w.user); const helm = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), abGlow(0x9affea, { opacity: 0.35 })); helm.position.y = 1.7; p.add(helm);
+      const a = Math.random() * 7; S.add(p); AB.viewers[w.user] = { o: p, a, r: 6 + Math.random() * 6, sp: 0.05 + Math.random() * 0.05 }; }); }
+  Object.values(AB.viewers).forEach((v, i) => { v.a += dt * v.sp; v.o.position.set(Math.cos(v.a) * v.r, 0, 2 + Math.sin(v.a) * 2.5); v.o.rotation.y = -v.a + Math.PI; NPC.pose(v.o, 'walk', t, 0, v.a * v.r * 2.7); });
+}
 // ---------------------------------------------------------------- OPERATOR VAULT (Zone Zero): epic emblems, calling cards, dog tags, medals, weapon camos and prestige badges given to players, shown in the world + as an on-stream unlock
 const vtRarCol = (r, t) => r === 'mythic' ? `hsl(${(352 + Math.sin((t || 0) * 2.2) * 22 + 360) % 360},100%,${58 + Math.sin((t || 0) * 5) * 6}%)` : (VD.rar[r] || VD.rar.epic)[1];
 function vtPath(x, pts) { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); }
@@ -2037,9 +2251,9 @@ function vaultShowUser(user) { const mine = vaultItems.filter(v => v.name.toLowe
 
 window.LSCZ = {
   ready: true, screens, ZONE_SHOTS, extraScreens,
-  build: { space: () => { if (!window.__zpt) { zPlanetTextures(); window.__zpt = 1; } buildSpace(); }, planet: () => { if (!window.__zpt) { zPlanetTextures(); window.__zpt = 1; } buildPlanet(); }, bay: () => buildBay(), summit: () => buildSummit(), hollow: () => buildHollow(), zero: () => buildZero() },
-  scene: z => ({ space: () => SP.scene, planet: () => PL.scene, bay: () => BAY.scene, summit: () => SM.scene, hollow: () => HW.scene, zero: () => ZZ.scene })[z](),
-  tick: (z, dt, t) => ({ space: spaceTick, planet: planetTick, bay: bayTick, summit: summitTick, hollow: hollowTick, zero: zeroTick })[z](dt, t),
+  build: { space: () => { if (!window.__zpt) { zPlanetTextures(); window.__zpt = 1; } buildSpace(); }, planet: () => { if (!window.__zpt) { zPlanetTextures(); window.__zpt = 1; } buildPlanet(); }, bay: () => buildBay(), summit: () => buildSummit(), hollow: () => buildHollow(), zero: () => buildZero(), abyss: () => buildAbyss() },
+  scene: z => ({ space: () => SP.scene, planet: () => PL.scene, bay: () => BAY.scene, summit: () => SM.scene, hollow: () => HW.scene, zero: () => ZZ.scene, abyss: () => AB.scene })[z](),
+  tick: (z, dt, t) => ({ space: spaceTick, planet: planetTick, bay: bayTick, summit: summitTick, hollow: hollowTick, zero: zeroTick, abyss: abyssTick })[z](dt, t),
   NPC
 };
 })();

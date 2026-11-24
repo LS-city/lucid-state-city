@@ -962,7 +962,7 @@ async function connectMulti() {
     $('#online').classList.add('off'); $('#oncount').textContent = onClaudeHost ? 'Chat works on the full website' : 'Chat could not connect';
   }
 }
-const ZKEYS = ['city', 'summit', 'zero', 'hollow', 'bay', 'space', 'planet'];
+const ZKEYS = ['city', 'summit', 'zero', 'hollow', 'bay', 'space', 'planet', 'abyss'];
 function sendPose(t) {
   if (!room || !act.pose) return;
   const d = [Math.round(player.pos.x * 10) / 10, Math.round(player.pos.z * 10) / 10, Math.round(player.yaw * 100) / 100, zone !== 'city' ? Math.round(zoneFeet * 100) / 100 : player.sit ? Math.round(player.sit.y * 100) / 100 : Math.round(ground * 100) / 100, player.sit ? 1 : 0, ZKEYS.indexOf(zone)], k = d.join();
@@ -1269,9 +1269,9 @@ function makeTransit() {
   transitSign = signTex(1024, 640); const { ctx, cv } = transitSign;
   ctx.fillStyle = '#05040c'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.strokeStyle = '#29e7ff'; ctx.lineWidth = 8; ctx.strokeRect(12, 12, cv.width - 24, cv.height - 24);
   glowText(ctx, 'LSC TRANSIT', cv.width / 2, 78, '#29e7ff', 72, cv.width - 80);
-  [['Helicopter', 'Crimson Summit', '#ff3a3a'], ['Army convoy', 'Zone Zero', '#ffb347'], ['Ghost bus', 'Ashen Hollow', '#b28cff'], ['Speedboat', 'Lucid Bay', '#ff3ea5'], ['Rocket · Shuttle', 'Space · Planet Lucida', '#7dffb0']].forEach(([r, d, c], i) => {
-    ctx.textAlign = 'left'; ctx.font = '700 38px "Space Grotesk",sans-serif'; ctx.fillStyle = c; ctx.fillText(r, 60, 175 + i * 92);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#f3efff'; ctx.font = '500 38px "Space Grotesk",sans-serif'; ctx.fillText(d, cv.width - 60, 175 + i * 92); });
+  [['Helicopter', 'Crimson Summit', '#ff3a3a'], ['Army convoy', 'Zone Zero', '#ffb347'], ['Ghost bus', 'Ashen Hollow', '#b28cff'], ['Speedboat', 'Lucid Bay', '#ff3ea5'], ['Rocket · Shuttle', 'Space · Planet Lucida', '#7dffb0'], ['Submarine', 'The Abyss', '#1fd6c4']].forEach(([r, d, c], i) => {
+    ctx.textAlign = 'left'; ctx.font = '700 36px "Space Grotesk",sans-serif'; ctx.fillStyle = c; ctx.fillText(r, 60, 168 + i * 80);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#f3efff'; ctx.font = '500 36px "Space Grotesk",sans-serif'; ctx.fillText(d, cv.width - 60, 168 + i * 80); });
   transitSign.tex.needsUpdate = true;
   const g = new THREE.Group(); g.position.set(-24, 0.2, 82.5);
   const post = new THREE.Mesh(new THREE.BoxGeometry(10.4, 6.8, .5), new THREE.MeshStandardMaterial({ color: 0x0a0812, metalness: .6, roughness: .4 })); post.position.y = 6.2; g.add(post);
@@ -1349,7 +1349,8 @@ const PLACES = {
   hollow: { n: 'Ashen Hollow', ride: 'Ghost bus', d: 'Foggy haunted town: the Palace Theater, mansion on the hill, graveyard, church.', go: 'The last bus to Ashen Hollow is arriving…' },
   bay:    { n: 'Lucid Bay', ride: 'Speedboat', d: 'Sunset neon beach: floating stage, Ocean Drive, the pier and the big wheel.', go: 'Heading to the boats… next stop Lucid Bay' },
   space:  { n: 'Orbital Station', ride: 'Rocket', d: 'A space station with floating screens and planets all around.', go: 'Launching to space…' },
-  planet: { n: 'Planet Lucida', ride: 'Shuttle', d: 'Neon crystal world under a giant ringed planet.', go: 'Flying to planet Lucida…' }
+  planet: { n: 'Planet Lucida', ride: 'Shuttle', d: 'Neon crystal world under a giant ringed planet.', go: 'Flying to planet Lucida…' },
+  abyss:  { n: 'The Abyss', ride: 'Submarine', d: 'Underwater bunker on the edge of a trench: sea creatures, a leviathan, a giant squid, and the Dark Room with the live stream.', go: 'Diving to The Abyss… LSC Deep Station, depth 1,140 m' }
 };
 let zone = 'city', zonesLoading = null, travelling = false;
 const ZW = {};   // per area: walkable meshes + spawn
@@ -1389,7 +1390,7 @@ function prepZone(z) {
   S.updateMatrixWorld(true);
   S.traverse(o => {
     if (!o.isMesh || o.isSprite || o.isPoints || o.isInstancedMesh) return;
-    const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || m.blending === THREE.AdditiveBlending || (m.transparent && m.opacity < .5)) return;
+    const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || (!o.userData.solid && (m.blending === THREE.AdditiveBlending || (m.transparent && m.opacity < .5)))) return;
     b.setFromObject(o); const sx = b.max.x - b.min.x, sy = b.max.y - b.min.y, sz = b.max.z - b.min.z;
     if (sx > 1400 || sz > 1400 || (sx < .5 && sz < .5 && sy < 2.2)) return;   // skip skies and tiny moving bits
     walk.push({ m: o, box: b.clone() });
@@ -1447,8 +1448,8 @@ function setZone(z) {
   const S = curScene(); peers.forEach(p => { S.add(p.g); p.g.visible = p.zone === zone && p.seen !== undefined; });
   if (z === 'city') { player.pos.set(0, EYE, 92); player.yaw = 0; zoneFeet = 0; }
   else {
-    const W = ZW[z]; let sx = W.spawn.x, sz = W.spawn.z, g = zoneGround(sx, sz, 120, 300);
-    if (g === null) { const fx = -Math.sin(W.yaw), fz = -Math.cos(W.yaw); for (let d = 1; d < 80 && g === null; d++) { sx = W.spawn.x + fx * d; sz = W.spawn.z + fz * d; g = zoneGround(sx, sz, 120, 300); } }
+    const W = ZW[z], FROM = { abyss: 1.5 }[z] || 120; let sx = W.spawn.x, sz = W.spawn.z, g = zoneGround(sx, sz, FROM, 300);
+    if (g === null) { const fx = -Math.sin(W.yaw), fz = -Math.cos(W.yaw); for (let d = 1; d < 80 && g === null; d++) { sx = W.spawn.x + fx * d; sz = W.spawn.z + fz * d; g = zoneGround(sx, sz, FROM, 300); } }
     zoneFeet = g === null ? 0 : g; player.pos.set(sx, zoneFeet + EYE, sz); player.yaw = W.yaw;
   }
   camera.far = z === 'city' ? 900 : 4000; camera.updateProjectionMatrix();
