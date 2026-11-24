@@ -72,6 +72,21 @@ kbd{font:12px ui-monospace,monospace;border:1px solid rgba(255,255,255,.3);borde
 #tvbody .off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;font-size:14px;color:#d6cfee}
 #tvbody .off a{color:var(--cy);font-weight:700}
 .touch #tv{top:120px;bottom:auto}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:40px;min-height:40px;padding:0;border-radius:50%;border:2px solid transparent}
+.sw button.sel{border-color:#fff;box-shadow:0 0 12px currentColor}
+#online{display:flex;align-items:center;gap:8px;font-size:13px;color:#cfc8e8;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:4px 12px;width:max-content;max-width:100%}
+#online i{width:8px;height:8px;border-radius:50%;background:#7dffb0;box-shadow:0 0 8px #7dffb0}
+#online.off i{background:#777;box-shadow:none}
+#clog{position:fixed;right:14px;bottom:66px;width:min(330px,calc(100% - 28px));display:flex;flex-direction:column;gap:4px;z-index:3;pointer-events:none}
+#clog div{background:rgba(10,7,22,.78);border-radius:10px;padding:6px 10px;font-size:14px;line-height:1.35;overflow-wrap:anywhere;transition:opacity .6s}
+#clog b{font-weight:700;margin-right:6px}
+#clog .sys{color:#9d95bd;font-style:italic}
+#cbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(560px,calc(100% - 28px));display:none;gap:8px;z-index:6}
+#cbar.on{display:flex}
+#cbar input{flex:1}
+.touch #clog{bottom:auto;top:200px}
+.touch #cbar{bottom:auto;top:110px}
 #joy{position:fixed;left:22px;bottom:22px;width:120px;height:120px;border-radius:50%;border:1px solid var(--line);background:rgba(10,7,22,.4);display:none;z-index:4;touch-action:none}
 #joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(41,231,255,.35);border:1px solid var(--cy)}
 .touch #joy{display:block}
@@ -90,10 +105,13 @@ kbd{font:12px ui-monospace,monospace;border:1px solid rgba(255,255,255,.3);borde
 <div class="brand">
   <div class="logo">Lucid State City</div>
   <div class="tp" id="tp"></div>
+  <div id="online"><i></i><span id="oncount">Just you so far</span></div>
 </div>
 <div id="prompt" role="button" tabindex="0"></div>
 <div id="joy" aria-hidden="true"><i></i></div>
-<div id="fx"><button type="button" id="snd">Sound: on</button><button type="button" id="rainb">Rain: on</button></div>
+<div id="clog" aria-live="polite"></div>
+<form id="cbar" autocomplete="off"><input id="cin" maxlength="120" placeholder="Say something… (Enter to send, Esc to close)" aria-label="Chat message"><button class="hot" type="submit">Send</button></form>
+<div id="fx"><button type="button" id="cbtn">Chat</button><button type="button" id="snd">Sound: on</button><button type="button" id="rainb">Rain: on</button></div>
 
 <aside id="panel" aria-live="polite">
   <button class="close" id="close" aria-label="Close">×</button>
@@ -104,7 +122,9 @@ kbd{font:12px ui-monospace,monospace;border:1px solid rgba(255,255,255,.3);borde
   <div class="card">
     <h1>Welcome to LSC</h1>
     <p>Walk the city, step into the clubs, and click anything glowing with a sign to see what's there.</p>
-    <p class="note"><b>Computer:</b> <kbd>W A S D</kbd> to walk, drag to look, <kbd>Shift</kbd> to run, <kbd>E</kbd> or click to open what's in front of you.<br><b>Phone:</b> joystick to walk, drag to look, tap a sign.</p>
+    <p class="note"><b>Computer:</b> <kbd>W A S D</kbd> to walk, drag to look, <kbd>Shift</kbd> to run, <kbd>E</kbd> or click to open what's in front of you.<br><b>Phone:</b> joystick to walk, drag to look, tap a sign.<br><b>Chat:</b> press <kbd>Enter</kbd> (or the Chat button) and say hi. Your words pop up over your head.</p>
+    <label for="nm">Your name in the city</label><input id="nm" maxlength="16" autocomplete="nickname" placeholder="Visitor">
+    <label>Your neon colour</label><div class="sw" id="sw"></div>
     <div class="row"><button class="hot" id="go">Enter the city</button></div>
   </div>
 </div>
@@ -412,7 +432,8 @@ function pick(x, y) {
   v2.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
   ray.setFromCamera(v2, camera);
   const hit = ray.intersectObjects(pickables, true)[0];
-  if (!hit) return; const h = hotAt(hit.point, 1.2); if (h) openSpot(h);
+  if (!hit) return;
+  if (hit.object.userData.peer) { peerPanel(hit.object.userData.peer); return; } const h = hotAt(hit.point, 1.2); if (h) openSpot(h);
 }
 
 /* ---------- panels ---------- */
@@ -684,6 +705,161 @@ $('#snd').addEventListener('click', () => {
 });
 $('#rainb').addEventListener('click', () => { rainOn = !rainOn; $('#rainb').textContent = 'Rain: ' + (rainOn ? 'on' : 'off'); });
 
+/* ---------- multiplayer: other visitors + chat bubbles ---------- */
+const COLORS = ['#29e7ff', '#ff3ea5', '#ffb347', '#7dffb0', '#b28cff', '#ff2a3a'];
+let me = { n: '', c: 0 };
+try { const s0 = JSON.parse(localStorage.getItem('lsc_me') || 'null'); if (s0) me = { n: String(s0.n || '').slice(0, 16), c: (s0.c | 0) % COLORS.length }; } catch (e) {}
+const nmEl = $('#nm'); nmEl.value = me.n;
+$('#sw').innerHTML = COLORS.map((c, i) => `<button type="button" data-i="${i}" style="background:${c};color:${c}" aria-label="Colour ${i + 1}"></button>`).join('');
+const markSw = () => document.querySelectorAll('#sw button').forEach(b => b.classList.toggle('sel', +b.dataset.i === me.c));
+markSw();
+nmEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#go').click(); } });
+$('#sw').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { me.c = +b.dataset.i; markSw(); } });
+
+/* word filter: add more words to this list any time */
+const BLOCKED = ['fuck', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'whore', 'slut', 'fag', 'retard', 'nigg', 'n1gg', 'kike', 'spic', 'chink', 'tranny'];
+const blockRe = new RegExp(BLOCKED.map(w => w.split('').map(ch => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '+').join('[^a-z0-9]*')).join('|'), 'gi');
+const cleanText = t => String(t).replace(/[\u0000-\u001f​-‏‪-‮]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120).replace(blockRe, m => '*'.repeat(Math.min(m.length, 6)));
+const cleanName = t => cleanText(t).slice(0, 16) || 'Visitor';
+
+const peers = new Map(), muted = new Set();
+let room = null, act = {}, lastPose = '', lastPoseT = 0, sentTimes = [];
+
+function labelSprite(text, color) {
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const ctx = cv.getContext('2d');
+  ctx.font = '700 44px "Space Grotesk",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.fillStyle = color; ctx.fillText(text, 256, 48);
+  ctx.shadowBlur = 0; ctx.fillStyle = '#fff'; ctx.globalAlpha = .6; ctx.fillText(text, 256, 48);
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  sp.scale.set(2.6, .49, 1); return sp;
+}
+function bubbleSprite(text, color) {
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d'), F = '500 30px "Space Grotesk",sans-serif';
+  ctx.font = F; const words = text.split(' '), lines = []; let line = '';
+  for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > 420 && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line); lines.splice(4);
+  const W = Math.min(460, Math.max(...lines.map(l => ctx.measureText(l).width)) + 44), H = lines.length * 38 + 34 + 18;
+  cv.width = W + 8; cv.height = H + 8; ctx.font = F;
+  const r = 18, x = 4, y = 4, h = H - 18;
+  ctx.fillStyle = 'rgba(10,7,22,.92)'; ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + W, y, x + W, y + h, r); ctx.arcTo(x + W, y + h, x, y + h, r);
+  ctx.lineTo(x + W / 2 + 14, y + h); ctx.lineTo(x + W / 2, y + h + 16); ctx.lineTo(x + W / 2 - 14, y + h);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + W, y, r); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#f3efff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => ctx.fillText(l, x + W / 2, y + 17 + 19 + i * 38));
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  sp.scale.set(cv.width / 120, cv.height / 120, 1); sp.center.set(.5, 0); return sp;
+}
+function makeAvatar(id) {
+  const g = new THREE.Group(), col = new THREE.Color(COLORS[0]);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x15111f, emissive: col, emissiveIntensity: .9, roughness: .4 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(.3, .38, 1.15, 14), mat); body.position.y = .78;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.27, 16, 12), mat); head.position.y = 1.6;
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(.36, .09, .1), new THREE.MeshBasicMaterial({ color: 0xffffff })); visor.position.set(0, 1.63, -.24);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.5, .04, 6, 28), new THREE.MeshBasicMaterial({ color: col })); ring.rotation.x = Math.PI / 2; ring.position.y = .06;
+  [body, head].forEach(m => { m.userData.peer = id; pickables.push(m); });
+  g.add(body, head, visor, ring); scene.add(g);
+  const p = { id, g, mat, ring, n: 'Visitor', c: 0, label: null, bubble: null, bubbleT: 0, tgt: new THREE.Vector3(0, .2, 96), yaw: 0, tyaw: 0, seen: false, inbox: [] };
+  g.position.copy(p.tgt); g.visible = false; peers.set(id, p); setInfo(p, { n: 'Visitor', c: 0 }); return p;
+}
+function setInfo(p, d) {
+  p.n = cleanName(d.n); p.c = Math.abs(d.c | 0) % COLORS.length;
+  const col = new THREE.Color(COLORS[p.c]); p.mat.emissive.copy(col); p.ring.material.color.copy(col);
+  if (p.label) { p.g.remove(p.label); p.label.material.map.dispose(); }
+  p.label = labelSprite(p.n, COLORS[p.c]); p.label.position.y = 2.25; p.g.add(p.label);
+  applyMute(p);
+}
+function applyMute(p) { const m = muted.has(p.id); p.mat.emissiveIntensity = m ? .15 : .9; if (m && p.bubble) { p.g.remove(p.bubble); p.bubble = null; } }
+function removePeer(id) {
+  const p = peers.get(id); if (!p) return;
+  scene.remove(p.g); p.g.traverse(o => { if (o.isMesh || o.isSprite) { const i = pickables.indexOf(o); if (i >= 0) pickables.splice(i, 1); } });
+  peers.delete(id); if (p.seen) logLine(null, `${p.n} left the city`); updateCount();
+}
+function logLine(who, text, color) {
+  const box = $('#clog'), d = document.createElement('div');
+  if (who === null) { d.className = 'sys'; d.textContent = text; }
+  else { const b = document.createElement('b'); b.textContent = who; b.style.color = color || '#fff'; d.append(b, document.createTextNode(text)); }
+  box.append(d); while (box.children.length > 6) box.firstChild.remove();
+  setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 700); }, 20000);
+}
+function updateCount() {
+  const n = peers.size + 1, el = $('#oncount');
+  el.textContent = n === 1 ? 'Just you so far' : `${n} people in the city`;
+}
+function showBubble(p, text) {
+  if (p.bubble) { p.g.remove(p.bubble); p.bubble.material.map.dispose(); }
+  p.bubble = bubbleSprite(text, COLORS[p.c]); p.bubble.position.y = 2.55; p.g.add(p.bubble); p.bubbleT = 7;
+}
+async function connectMulti() {
+  if (room) return;
+  try {
+    const T = await import('https://cdn.jsdelivr.net/npm/trystero@0.26.0/+esm');
+    room = T.joinRoom({ appId: 'lucid-state-city-ls-city-v1' }, 'city');
+    const mk = id => { const a = room.makeAction(id);
+      if (Array.isArray(a)) return { send: (d, o) => a[0](d, o && o.target), on: f => a[1]((d, pid) => f(d, pid)) };
+      return { send: (d, o) => a.send(d, o), on: f => { a.onMessage = (d, meta) => f(d, meta && typeof meta === 'object' ? meta.peerId : meta); } }; };
+    act = { hi: mk('hi'), pose: mk('pose'), chat: mk('chat') };
+    room.onPeerJoin = id => { if (!peers.has(id)) makeAvatar(id); act.hi.send({ n: me.n, c: me.c }, { target: id }); updateCount(); };
+    room.onPeerLeave = id => removePeer(id);
+    act.hi.on((d, id) => { if (!d || typeof d !== 'object') return; const p = peers.get(id) || makeAvatar(id); setInfo(p, d); if (!p.seen) { p.seen = true; logLine(null, `${p.n} entered the city`); } updateCount(); });
+    act.pose.on((d, id) => {
+      if (!Array.isArray(d) || d.length < 3) return; const [x, z, yaw] = d.map(Number);
+      if (![x, z, yaw].every(Number.isFinite)) return; const p = peers.get(id) || makeAvatar(id);
+      p.tgt.set(Math.max(-110, Math.min(110, x)), .2, Math.max(-110, Math.min(110, z))); p.tyaw = yaw;
+      if (!p.g.visible) { p.g.position.copy(p.tgt); p.g.visible = true; }
+    });
+    act.chat.on((d, id) => {
+      const p = peers.get(id); if (!p || muted.has(id) || typeof d !== 'string') return;
+      const now = performance.now(); p.inbox = p.inbox.filter(t => now - t < 6000); if (p.inbox.length >= 5) return; p.inbox.push(now);
+      const t = cleanText(d); if (!t) return; showBubble(p, t); logLine(p.n, t, COLORS[p.c]);
+    });
+    $('#online').classList.remove('off'); updateCount();
+    act.hi.send({ n: me.n, c: me.c });
+  } catch (e) {
+    console.warn('Multiplayer unavailable', e); room = null;
+    $('#online').classList.add('off'); $('#oncount').textContent = onClaudeHost ? 'Chat works on the full website' : 'Chat could not connect';
+  }
+}
+function sendPose(t) {
+  if (!room || !act.pose) return;
+  const d = [Math.round(player.pos.x * 10) / 10, Math.round(player.pos.z * 10) / 10, Math.round(player.yaw * 100) / 100], k = d.join();
+  if ((k !== lastPose && t - lastPoseT > .12) || t - lastPoseT > 2) { act.pose.send(d); lastPose = k; lastPoseT = t; }
+}
+function updatePeers(dt) {
+  const k = 1 - Math.pow(.0005, dt);
+  peers.forEach(p => {
+    p.g.position.lerp(p.tgt, k);
+    let dy = p.tyaw - p.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); p.yaw += dy * k; p.g.rotation.y = p.yaw;
+    if (p.bubble && (p.bubbleT -= dt) <= 0) { p.g.remove(p.bubble); p.bubble.material.map.dispose(); p.bubble = null; }
+    else if (p.bubble && p.bubbleT < 1) p.bubble.material.opacity = p.bubbleT;
+  });
+}
+// chat box
+const cbar = $('#cbar'), cin = $('#cin');
+function openChat() { cbar.classList.add('on'); cin.focus(); for (const k in keys) keys[k] = false; }
+function closeChat() { cbar.classList.remove('on'); cin.value = ''; canvas.focus(); }
+$('#cbtn').addEventListener('click', () => cbar.classList.contains('on') ? closeChat() : openChat());
+cin.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); closeChat(); } e.stopPropagation(); });
+cbar.addEventListener('submit', e => {
+  e.preventDefault(); const t = cleanText(cin.value); if (!t) { closeChat(); return; }
+  const now = performance.now(); sentTimes = sentTimes.filter(x => now - x < 8000);
+  if (sentTimes.length >= 4) { logLine(null, 'Slow down a little: wait a few seconds and try again.'); return; }
+  sentTimes.push(now); logLine('You', t, COLORS[me.c]);
+  if (room && act.chat) act.chat.send(t); else logLine(null, 'Nobody can hear you yet: chat is offline.');
+  cin.value = ''; if (matchMedia('(pointer:coarse)').matches) closeChat(); else { cbar.classList.remove('on'); canvas.focus(); }
+});
+addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('input,textarea,button') && !$('#help')) { e.preventDefault(); openChat(); } });
+function peerPanel(id) {
+  const p = peers.get(id); if (!p) return;
+  pbody.innerHTML = `<span class="pill">Visitor</span><h2></h2><p class="note">Someone else walking Lucid State City right now.</p><div class="row"><button class="hot" type="button" id="mut"></button></div>`;
+  pbody.querySelector('h2').textContent = p.n; pbody.querySelector('h2').style.color = COLORS[p.c];
+  const b = $('#mut'), lab = () => b.textContent = muted.has(id) ? `Unmute ${p.n}` : `Mute ${p.n}`; lab();
+  b.addEventListener('click', () => { muted.has(id) ? muted.delete(id) : muted.add(id); applyMute(p); lab(); });
+  panel.classList.add('open');
+}
+
 /* ---------- loop ---------- */
 const prompt = $('#prompt'); let near = null, lastNear = null;
 prompt.addEventListener('click', () => near && openSpot(near));
@@ -716,6 +892,7 @@ function frameInner() {
     if (near) { prompt.innerHTML = `<b>${matchMedia('(pointer:coarse)').matches ? 'Tap' : 'E'}</b> · `; prompt.append(LABEL(near)); prompt.style.display = 'block'; }
     else prompt.style.display = 'none';
   }
+  try { updatePeers(dt); sendPose(clock.elapsedTime); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
   try { updateLife(dt, clock.elapsedTime); updateListener(); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
   renderer.render(scene, camera);
 }
@@ -723,7 +900,11 @@ function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.asp
 addEventListener('resize', resize); resize();
 renderer.setAnimationLoop(frame);
 window.__lsc = { openSpot, hotspots, player };
-window.__onEnter = () => { canvas.focus(); startAudio(); };
+window.__onEnter = () => {
+  me.n = cleanName(nmEl.value); try { localStorage.setItem('lsc_me', JSON.stringify(me)); } catch (e) {}
+  canvas.focus(); startAudio(); connectMulti();
+  logLine(null, `Welcome, ${me.n}. Press Enter to chat.`);
+};
 if (window.__entered) window.__onEnter();
 }
 </script>
