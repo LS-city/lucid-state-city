@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Lucid State City</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Monoton&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a night out in Rassir's city; inviting, a little cheeky, clear about what's for rent
+   IDEA: the city itself is the site, panels feel like neon shop signage
+   PICTURE: the live walkable 3D city, full screen
+   COLOUR and TYPE: the world's own night palette: ink #06040d, cyan #29e7ff, magenta #ff3ea5, red neon #ff2a3a; Monoton sign titles, Space Grotesk body
+   LAYOUT: canvas fills; brand + teleports top-left; prompt bottom-centre; detail panel slides from right (bottom sheet on phones) */
+:root{color-scheme:dark;--ink:#f3efff;--bg:#06040d;--cy:#29e7ff;--mag:#ff3ea5;--red:#ff2a3a;--gold:#ffb347;--glass:rgba(10,7,22,.86);--line:rgba(41,231,255,.28)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 "Space Grotesk",system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+.brand{position:fixed;top:14px;left:14px;display:flex;flex-direction:column;gap:8px;max-width:calc(100% - 28px);z-index:3}
+.logo{font:400 22px/1 Monoton,cursive;color:var(--cy);letter-spacing:.02em;text-shadow:0 0 12px rgba(41,231,255,.6)}
+.tp{display:flex;flex-wrap:wrap;gap:6px}
+button{font:500 14px "Space Grotesk",sans-serif;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--glass);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--cy)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+button.hot{background:var(--mag);border-color:var(--mag);color:#1c0010;font-weight:700}
+#prompt{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--glass);border:1px solid var(--mag);border-radius:999px;padding:10px 18px;font-weight:500;display:none;z-index:3;cursor:pointer;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+#prompt b{color:var(--mag)}
+#panel{position:fixed;top:0;right:0;height:100%;width:min(420px,100%);background:var(--glass);backdrop-filter:blur(10px);border-left:1px solid var(--line);transform:translateX(105%);transition:transform .28s ease;z-index:5;overflow-y:auto;padding:22px 22px 40px}
+#panel.open{transform:none}
+#panel h2{font:400 26px/1.15 Monoton,cursive;margin:6px 0 4px;color:var(--cy);text-wrap:balance}
+#panel h2.red{color:var(--red)}#panel h2.mag{color:var(--mag)}
+#panel p{margin:0 0 12px;color:#d6cfee;font-size:15px}
+.close{position:absolute;top:12px;right:12px;min-width:44px;min-height:44px;font-size:20px}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(41,231,255,.15);color:var(--cy)}
+.pill.taken{background:rgba(255,62,165,.18);color:var(--mag)}
+.perks{margin:6px 0 16px;padding:0;list-style:none}
+.perks li{padding:6px 0 6px 22px;position:relative;font-size:15px;border-bottom:1px solid rgba(255,255,255,.06)}
+.perks li::before{content:"";position:absolute;left:4px;top:14px;width:8px;height:8px;border-radius:2px;background:var(--mag);box-shadow:0 0 8px var(--mag)}
+label{display:block;font-size:13px;color:#b9b1d6;margin:12px 0 4px}
+input,textarea{width:100%;font:16px "Space Grotesk",sans-serif;color:var(--ink);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 12px}
+textarea{min-height:70px;resize:vertical}
+.err{color:#ff7a8a;font-size:13px;min-height:1.2em;margin-top:6px}
+.dates{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;margin:8px 0 4px}
+.dates button{min-height:56px;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+.dates small{font-size:11px;color:var(--gold)}
+.dates button.sel{background:var(--red);border-color:var(--red);color:#fff}
+.dates button.sel small{color:#fff}
+.dates button:disabled{opacity:.35;cursor:not-allowed}
+.req{display:none;margin-top:14px;border:1px dashed var(--cy);border-radius:12px;padding:12px}
+.req pre{white-space:pre-wrap;font:13px/1.5 ui-monospace,Consolas,monospace;margin:0 0 10px;color:#e8e3ff}
+.ev{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ev b{display:block;font-size:13px;color:var(--gold)}
+.note{font-size:13px;color:#9d95bd}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#help{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,2,10,.72);z-index:6;padding:16px}
+#help .card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:420px}
+#help h1{font:400 28px/1.1 Monoton,cursive;color:var(--cy);margin:0 0 10px}
+#help p{margin:0 0 10px;color:#d6cfee}
+kbd{font:12px ui-monospace,monospace;border:1px solid rgba(255,255,255,.3);border-radius:5px;padding:1px 6px}
+#load{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);z-index:7}
+#load .bar{width:min(320px,70vw);height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+#load .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--mag))}
+#fx{position:fixed;right:14px;bottom:14px;display:flex;gap:6px;z-index:3}
+.touch #fx{bottom:auto;top:14px;flex-direction:column}
+#errbox{display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9;background:#2a0710;border:1px solid var(--red);color:#ffd6dc;border-radius:10px;padding:10px 14px;font-size:14px;max-width:calc(100% - 24px)}
+#tv{display:none;position:fixed;left:14px;bottom:14px;width:min(440px,calc(100% - 28px));z-index:4;background:#000;border:1px solid var(--mag);border-radius:12px;overflow:hidden;box-shadow:0 0 24px rgba(255,62,165,.35)}
+#tv.on{display:block}
+.tvbar{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 4px 12px;background:var(--glass);font-size:13px;font-weight:700;color:var(--mag)}
+.tvbar button{min-height:36px;min-width:36px;padding:0}
+#tvbody{position:relative;aspect-ratio:16/9;background:#05030a}
+#tvbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#tvbody .off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;font-size:14px;color:#d6cfee}
+#tvbody .off a{color:var(--cy);font-weight:700}
+.touch #tv{top:120px;bottom:auto}
+#joy{position:fixed;left:22px;bottom:22px;width:120px;height:120px;border-radius:50%;border:1px solid var(--line);background:rgba(10,7,22,.4);display:none;z-index:4;touch-action:none}
+#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(41,231,255,.35);border:1px solid var(--cy)}
+.touch #joy{display:block}
+.touch #prompt{bottom:160px}
+@media(max-width:600px){
+ #panel{top:auto;bottom:0;height:auto;max-height:78%;width:100%;border-left:0;border-top:1px solid var(--line);border-radius:18px 18px 0 0;transform:translateY(105%)}
+ .logo{font-size:18px}
+ .tp button{min-height:36px;font-size:13px;padding:0 9px}
+}
+@media(prefers-reduced-motion:reduce){#panel{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0"></canvas>
+
+<div class="brand">
+  <div class="logo">Lucid State City</div>
+  <div class="tp" id="tp"></div>
+</div>
+<div id="prompt" role="button" tabindex="0"></div>
+<div id="joy" aria-hidden="true"><i></i></div>
+<div id="fx"><button type="button" id="snd">Sound: on</button><button type="button" id="rainb">Rain: on</button></div>
+
+<aside id="panel" aria-live="polite">
+  <button class="close" id="close" aria-label="Close">×</button>
+  <div id="pbody"></div>
+</aside>
+
+<div id="help">
+  <div class="card">
+    <h1>Welcome to LSC</h1>
+    <p>Walk the city, step into the clubs, and click anything glowing with a sign to see what's there.</p>
+    <p class="note"><b>Computer:</b> <kbd>W A S D</kbd> to walk, drag to look, <kbd>Shift</kbd> to run, <kbd>E</kbd> or click to open what's in front of you.<br><b>Phone:</b> joystick to walk, drag to look, tap a sign.</p>
+    <div class="row"><button class="hot" id="go">Enter the city</button></div>
+  </div>
+</div>
+
+<div id="errbox" role="alert"></div>
+<div id="tv" aria-label="Live stream"><div class="tvbar"><span>● LIVE · Lucid State City</span><button type="button" id="tvx" aria-label="Close stream">×</button></div><div id="tvbody"></div></div>
+<script>
+(function(){
+  var go=document.getElementById('go'), help=document.getElementById('help');
+  function enter(){ if(help&&help.parentNode) help.parentNode.removeChild(help); window.__entered=true; try{ window.__onEnter&&window.__onEnter(); }catch(e){ window.__showErr&&window.__showErr(e); } }
+  go.addEventListener('click',enter); help.addEventListener('click',function(e){ if(e.target===help) enter(); });
+  window.__showErr=function(e){ var b=document.getElementById('errbox'); if(!b) return; b.textContent='Something broke: '+(e&&e.message?e.message:e)+'  (tell Patch this message)'; b.style.display='block'; };
+  window.addEventListener('error',function(ev){ window.__showErr(ev.error||ev.message); });
+  window.addEventListener('unhandledrejection',function(ev){ window.__showErr(ev.reason); });
+})();
+</script>
+<div id="load"><div class="logo">Lucid State City</div><div class="bar"><i id="lbar"></i></div><div class="note" id="ltxt">Loading the city…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script>
+{
+/* ======== EDIT THESE: who rents what ======== */
+const SHOPS = {
+  "01": { name: "Static Threads", tagline: "Streetwear drops every Friday", about: "This is what a leased storefront looks like: the business's own name in neon, plus its info, products and link right here.", color: "#7dffb0", example: true },
+  "02": null, "03": null, "04": null, "05": null, "06": null
+};
+const VAULT_BOOKED = {};            /* "2026-11-28": "DJ Name" */
+const EVENTS = [
+  { when: "Fri · 10 PM", where: "The Vault", what: "Your DJ night here: book the club" },
+  { when: "Nightly · 9 PM", where: "Fight Club", what: "Lucid State City Scuffle Hours, live" },
+  { when: "All night", where: "Zero Cool", what: "The stream on every screen" },
+  { when: "Now leasing", where: "East Ave", what: "6 neon storefronts open" }
+];
+const CONTACT = "@lucidstatecity on Twitch";
+const TWITCH = "lucidstatecity";      /* your Twitch channel */
+/* ============================================= */
+
+const $ = s => document.querySelector(s);
+if (typeof THREE === 'undefined') throw new Error('The 3D engine did not download. Check your connection and refresh.');
+const canvas = $('#c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07040f);
+scene.fog = new THREE.FogExp2(0x0a0618, 0.0085);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 900);
+scene.add(new THREE.HemisphereLight(0x8a7cff, 0x1a1030, 0.9));
+scene.add(new THREE.AmbientLight(0x30284a, 0.6));
+const moon = new THREE.DirectionalLight(0xaec4ff, 0.55); moon.position.set(-60, 120, 40); scene.add(moon);
+
+const EYE = 1.9, R = 0.45, LIMIT = 104;
+const player = { pos: new THREE.Vector3(0, EYE, 96), yaw: 0, pitch: -0.04 };
+const colliders = [], hotspots = [], pickables = [];
+const named = {};
+const tmpBox = new THREE.Box3();
+
+/* ---------- canvas-texture signs ---------- */
+function signTex(w, h) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+  return { cv, ctx: cv.getContext('2d'), tex };
+}
+function fitText(ctx, txt, maxW, size, font) {
+  let s = size; do { ctx.font = `${font} ${s}px "Space Grotesk",sans-serif`; s -= 2 } while (ctx.measureText(txt).width > maxW && s > 10);
+}
+function glowText(ctx, txt, x, y, color, size, maxW, weight = 700) {
+  fitText(ctx, txt, maxW, size, weight);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = color; ctx.shadowBlur = 22; ctx.fillStyle = color; ctx.fillText(txt, x, y);
+  ctx.shadowBlur = 6; ctx.fillStyle = '#fff'; ctx.globalAlpha = .55; ctx.fillText(txt, x, y); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+}
+function addSignPlane(meshName, w, h, z, sign) {
+  const m = named[meshName]; if (!m) return null;
+  const mat = new THREE.MeshBasicMaterial({ map: sign.tex, toneMapped: false, fog: true });
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  p.position.set(0, 0, z); m.add(p); return p;
+}
+const storeSigns = {};
+function drawStore(id, title, sub, color) {
+  const s = storeSigns[id]; if (!s) return;
+  const { ctx, cv } = s; ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#050309'; ctx.fillRect(0, 0, cv.width, cv.height);
+  glowText(ctx, title.toUpperCase(), cv.width / 2, cv.height * .42, color, 96, cv.width - 60);
+  glowText(ctx, sub.toUpperCase(), cv.width / 2, cv.height * .82, '#ff3ea5', 34, cv.width - 80, 500);
+  s.tex.needsUpdate = true;
+}
+let vaultSign, eventSign, liveSign = null;
+function drawLive(t) {
+  if (!liveSign) return; const { ctx, cv } = liveSign;
+  ctx.fillStyle = '#07040f'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = 'rgba(255,62,165,.5)'; ctx.lineWidth = 6; ctx.strokeRect(14, 14, cv.width - 28, cv.height - 28);
+  const on = Math.sin(t * 4) > -0.2;
+  ctx.fillStyle = on ? '#ff2a3a' : '#5a0d14'; ctx.shadowColor = '#ff2a3a'; ctx.shadowBlur = on ? 30 : 0;
+  ctx.beginPath(); ctx.arc(120, 110, 26, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+  glowText(ctx, 'LIVE', 240, 112, '#ff2a3a', 70, 200);
+  glowText(ctx, 'LUCID STATE CITY', cv.width / 2, 270, '#29e7ff', 96, cv.width - 80);
+  glowText(ctx, 'twitch.tv/' + TWITCH, cv.width / 2, 370, '#ff3ea5', 48, cv.width - 120, 500);
+  glowText(ctx, 'CLICK THE SCREEN TO WATCH', cv.width / 2, 480, '#ffb347', 40, cv.width - 120, 500);
+  liveSign.tex.needsUpdate = true;
+}
+const onClaudeHost = /claudeusercontent\.com$|claude\.ai$/.test(location.hostname);
+function openStream() {
+  const tv = $('#tv'), body = $('#tvbody');
+  if (!tv.classList.contains('on')) {
+    body.textContent = '';
+    if (onClaudeHost || !location.hostname) {
+      const d = document.createElement('div'); d.className = 'off';
+      d.innerHTML = '<div>The live player turns on once the city is on its own website.</div>';
+      const a = document.createElement('a'); a.href = 'https://www.twitch.tv/' + TWITCH; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Watch on twitch.tv/' + TWITCH; d.append(a); body.append(d);
+    } else {
+      const f = document.createElement('iframe');
+      f.src = `https://player.twitch.tv/?channel=${encodeURIComponent(TWITCH)}&parent=${encodeURIComponent(location.hostname)}&autoplay=true&muted=false`;
+      f.allow = 'autoplay; fullscreen'; f.allowFullscreen = true; f.title = 'Lucid State City live on Twitch'; body.append(f);
+    }
+    tv.classList.add('on');
+  }
+  if (AC && master) master.gain.setTargetAtTime(soundOn ? .15 : 0, AC.currentTime, .2);
+}
+function closeStream() { $('#tv').classList.remove('on'); $('#tvbody').textContent = ''; if (AC && master) master.gain.setTargetAtTime(soundOn ? .7 : 0, AC.currentTime, .2); }
+function drawVault(name) {
+  const { ctx, cv } = vaultSign; ctx.fillStyle = '#04030a'; ctx.fillRect(0, 0, cv.width, cv.height);
+  glowText(ctx, ('Tonight: ' + (name || 'your DJ night here')).toUpperCase(), cv.width / 2, cv.height / 2, '#ff3ea5', 70, cv.width - 60);
+  vaultSign.tex.needsUpdate = true;
+}
+function drawEvents() {
+  const { ctx, cv } = eventSign; ctx.fillStyle = '#05040c'; ctx.fillRect(0, 0, cv.width, cv.height);
+  glowText(ctx, 'TONIGHT IN LUCID STATE CITY', cv.width / 2, 70, '#29e7ff', 52, cv.width - 60);
+  const cols = ['#ff3ea5', '#ff2a3a', '#ffb347', '#29e7ff'];
+  EVENTS.slice(0, 5).forEach((e, i) => {
+    const y = 160 + i * 96; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = '700 30px "Space Grotesk",sans-serif'; ctx.fillStyle = cols[i % 4]; ctx.shadowColor = cols[i % 4]; ctx.shadowBlur = 14;
+    ctx.fillText(e.when.toUpperCase(), 50, y);
+    fitText(ctx, `${e.where} · ${e.what}`, cv.width - 100, 34, 500);
+    ctx.fillStyle = '#f3efff'; ctx.shadowBlur = 4; ctx.fillText(`${e.where} · ${e.what}`, 50, y + 38); ctx.shadowBlur = 0;
+  });
+  eventSign.tex.needsUpdate = true;
+}
+
+/* ---------- load the city ---------- */
+const loader = new THREE.GLTFLoader();
+function setup(gltf) {
+  const city = gltf.scene; scene.add(city); city.updateMatrixWorld(true);
+  city.traverse(o => { named[o.name] = o; if (o.isMesh && o.material && o.material.emissiveIntensity > 1.4) o.material.emissiveIntensity = 1.4; });
+
+  // hotspots from tagged roots
+  city.traverse(o => {
+    const d = o.userData || {};
+    if (d.lsc_type) { tmpBox.setFromObject(o); hotspots.push({ type: d.lsc_type, id: d.slot || d.club || 'board', box: tmpBox.clone(), root: o }); }
+  });
+  // venue hotspots
+  const venues = { ZC: ['venue', 'zerocool'], FC: ['venue', 'fightclub'], BIT: ['venue', 'bit'] };
+  const vb = {};
+  city.traverse(o => { if (!o.isMesh) return; const k = o.name.split('_')[0]; if (venues[k]) { tmpBox.setFromObject(o); (vb[k] ||= new THREE.Box3().makeEmpty()).union(tmpBox); } });
+  for (const k in vb) hotspots.push({ type: 'venue', id: venues[k][1], box: vb[k] });
+  city.traverse(o => { if (o.isMesh && /^SCREEN_(GAMEPLAY|LIVECAM)/.test(o.name)) { tmpBox.setFromObject(o); hotspots.unshift({ type: 'stream', id: o.name, box: tmpBox.clone() }); } });
+  const liveMats = new Set(); city.traverse(o => { if (o.isMesh && o.material && /SCREEN_(GAMEPLAY|LIVECAM)/.test(o.material.name)) liveMats.add(o.material); });
+  liveSign = signTex(1024, 576); liveSign.tex.flipY = false;
+  liveMats.forEach(m => { m.map = liveSign.tex; m.emissiveMap = liveSign.tex; m.emissive && m.emissive.set(0xffffff); m.emissiveIntensity = 1; m.color && m.color.set(0x000000); m.needsUpdate = true; });
+  drawLive(0);
+
+  const isMover = o => { for (let p = o; p; p = p.parent) if (/^(CITIZEN|CAR_\d+$)/.test(p.name)) return true; return false; };
+  const inSlot = o => { for (let p = o; p; p = p.parent) if (p.userData && p.userData.lsc_type) return true; return false; };
+  const noCollide = /^(CITIZEN|CAR|LANE|XWALK|SIDEWALK|GROUND|STRING|SKY|PUDDLE|RAIN|FOG|VAULT_Rope|STORE_\d+_Awning)/i;
+  const groups = new Map(), drop = [];
+  city.traverse(o => {
+    if (!o.isMesh) return;
+    tmpBox.setFromObject(o);
+    const sx = tmpBox.max.x - tmpBox.min.x, sz = tmpBox.max.z - tmpBox.min.z;
+    if (!noCollide.test(o.name) && tmpBox.min.y < 1.6 && tmpBox.max.y > 0.45 && (sx > .2 || sz > .2) && sx < 120 && sz < 120)
+      colliders.push(tmpBox.clone());
+    if (isMover(o)) return;
+    if (inSlot(o) || Array.isArray(o.material) || o.isSkinnedMesh) { pickables.push(o); return; }
+    const g = o.geometry; const key = o.material.uuid + '|' + Object.keys(g.attributes).sort().join(',') + '|' + (g.index ? 1 : 0);
+    if (!groups.has(key)) groups.set(key, { mat: o.material, geos: [] });
+    groups.get(key).geos.push(g.clone().applyMatrix4(o.matrixWorld)); drop.push(o);
+  });
+  let merged = 0;
+  try {
+    const BGU = THREE.BufferGeometryUtils;
+    groups.forEach(gp => {
+      const g = gp.geos.length > 1 ? BGU.mergeBufferGeometries(gp.geos, false) : gp.geos[0];
+      if (!g) throw new Error('merge failed');
+      const m = new THREE.Mesh(g, gp.mat); m.matrixAutoUpdate = false; scene.add(m); pickables.push(m); merged++;
+    });
+    drop.forEach(o => o.parent && o.parent.remove(o));
+  } catch (e) {
+    console.warn('Merge skipped:', e);
+    city.traverse(o => { if (o.isMesh && !pickables.includes(o)) pickables.push(o); });
+  }
+
+  // live signs on storefronts
+  for (const id of Object.keys(SHOPS)) {
+    storeSigns[id] = signTex(1024, 256);
+    const p = addSignPlane(`STORE_${id}_SignBoard`, 6.2, 1.5, 0.17, storeSigns[id]);
+    if (!p) continue;
+    ['SignText', 'SlotText'].forEach(n => { const t = named[`STORE_${id}_${n}`]; if (t) t.visible = false; });
+    const s = SHOPS[id];
+    if (s) { drawStore(id, s.name, s.tagline, s.color || '#29e7ff'); const w = named[`STORE_${id}_WindowText`]; if (w) w.visible = false; }
+    else drawStore(id, 'Your store here', `LSC storefront ${id} · available`, '#29e7ff');
+  }
+  vaultSign = signTex(1024, 160);
+  if (addSignPlane('VAULT_DJBoard', 9.8, 1.5, 0.17, vaultSign)) { const t = named['VAULT_DJ_Name']; if (t) t.visible = false; }
+  drawVault(VAULT_BOOKED[todayKey()] || '');
+  eventSign = signTex(1024, 600);
+  if (addSignPlane('EVENT_Panel', 10.8, 6.3, 0.27, eventSign)) ['EVENT_Title', 'EVENT_Line1', 'EVENT_Line2', 'EVENT_Line3', 'EVENT_Line4'].forEach(n => named[n] && (named[n].visible = false));
+  drawEvents();
+  const vaultH = hotspots.find(h => h.type === 'club'); if (vaultH) vb.VAULT = vaultH.box;
+  initLife(city, vb);
+
+  console.log(`LSC ready: ${merged} merged meshes, ${colliders.length} colliders, ${hotspots.length} hotspots`);
+  $('#load').remove();
+}
+const failLoad = err => { $('#ltxt').textContent = 'The city failed to load. Refresh to try again.'; console.error(err); };
+(async () => {
+  const res = await fetch('city.json'); if (!res.ok) throw new Error('HTTP ' + res.status);
+  const total = +res.headers.get('content-length') || 15.5e6, rd = res.body.getReader(), parts = []; let got = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length;
+    $('#lbar').style.width = Math.min(100, got / total * 100).toFixed(0) + '%'; $('#ltxt').textContent = `Loading the city… ${(got / 1048576).toFixed(1)} MB`; }
+  $('#ltxt').textContent = 'Building the streets…';
+  const raw = new Uint8Array(got); let o = 0; for (const p of parts) { raw.set(p, o); o += p.length; }
+  const j = JSON.parse(new TextDecoder().decode(raw));
+  const uri = j.buffers[0].uri, b64 = atob(uri.slice(uri.indexOf(',') + 1));
+  const bin = new Uint8Array(b64.length); for (let i = 0; i < b64.length; i++) bin[i] = b64.charCodeAt(i);
+  delete j.buffers[0].uri;
+  let js = new TextEncoder().encode(JSON.stringify(j)); const jp = (4 - js.length % 4) % 4, bp = (4 - bin.length % 4) % 4;
+  const glb = new Uint8Array(12 + 8 + js.length + jp + 8 + bin.length + bp), dv = new DataView(glb.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.length, true);
+  dv.setUint32(12, js.length + jp, true); dv.setUint32(16, 0x4E4F534A, true); glb.set(js, 20); glb.fill(0x20, 20 + js.length, 20 + js.length + jp);
+  const bo = 20 + js.length + jp; dv.setUint32(bo, bin.length + bp, true); dv.setUint32(bo + 4, 0x004E4942, true); glb.set(bin, bo + 8);
+  try { window.createImageBitmap = undefined; } catch (e) {}   /* use <img> textures: the host blocks fetch() of blob: URLs */
+  loader.parse(glb.buffer, '', setup, failLoad);
+})().catch(failLoad);
+
+/* ---------- teleports ---------- */
+const SPOTS = [
+  ['Gate', 0, 96, 0], ['East Ave stores', 45, 80, 0], ['The Vault', -40, -67.5, Math.PI / 2, 0.14],
+  ['Zero Cool', 0, -22, Math.PI / 2], ['Fight Club', -45, -22, Math.PI / 2], ['B.I.T.', -45, 22, Math.PI / 2]
+];
+$('#tp').innerHTML = SPOTS.map((s, i) => `<button data-i="${i}" type="button">${s[0]}</button>`).join('');
+$('#tp').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const s = SPOTS[+b.dataset.i];
+  player.pos.set(s[1], EYE, s[2]); player.yaw = s[3]; player.pitch = s[4] ?? -0.04; canvas.focus();
+});
+
+/* ---------- input ---------- */
+const keys = {};
+addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  keys[e.code] = true;
+  if (e.code === 'KeyE' && near) openSpot(near);
+  if (e.code === 'Escape') closePanel();
+});
+addEventListener('keyup', e => keys[e.code] = false);
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+let drag = null, moved = 0;
+canvas.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && joyId === e.pointerId) return; drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; moved = 0; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; moved += Math.abs(dx) + Math.abs(dy);
+  const k = e.pointerType === 'touch' ? 0.006 : 0.0035;
+  player.yaw -= dx * k; player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch - dy * k));
+  drag.x = e.clientX; drag.y = e.clientY;
+});
+canvas.addEventListener('pointerup', e => {
+  if (!drag || drag.id !== e.pointerId) return; drag = null;
+  if (moved < 8) pick(e.clientX, e.clientY);
+});
+
+// joystick
+const joy = $('#joy'), knob = joy.firstElementChild; let joyId = null; const jv = { x: 0, y: 0 };
+if (matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
+joy.addEventListener('pointerdown', e => { joyId = e.pointerId; joy.setPointerCapture(e.pointerId); joyMove(e); });
+joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; jv.x = jv.y = 0; knob.style.transform = ''; };
+joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+function joyMove(e) {
+  const r = joy.getBoundingClientRect(); let x = (e.clientX - r.left - r.width / 2) / (r.width / 2), y = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+  const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
+  jv.x = x; jv.y = y; knob.style.transform = `translate(${x * 34}px,${y * 34}px)`;
+}
+
+/* ---------- picking ---------- */
+const ray = new THREE.Raycaster(); ray.far = 60;
+const v2 = new THREE.Vector2();
+function hotAt(p, grow) { let best = null, bd = 1e9; for (const h of hotspots) { tmpBox.copy(h.box).expandByScalar(grow); if (tmpBox.containsPoint(p)) { const d = h.box.distanceToPoint(p); if (d < bd) { bd = d; best = h; } } } return best; }
+const fwd = new THREE.Vector3(), cen = new THREE.Vector3();
+function facing(grow) {
+  fwd.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  let best = null, bs = 1e9;
+  for (const h of hotspots) {
+    tmpBox.copy(h.box).expandByScalar(grow); if (!tmpBox.containsPoint(player.pos)) continue;
+    const d = h.box.distanceToPoint(player.pos); h.box.getCenter(cen); cen.sub(player.pos); cen.y = 0; cen.normalize();
+    const dot = cen.dot(fwd); if (dot < 0.15 && d > 2) continue;
+    const sc = d - dot * 6; if (sc < bs) { bs = sc; best = h; }
+  }
+  return best;
+}
+function pick(x, y) {
+  v2.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
+  ray.setFromCamera(v2, camera);
+  const hit = ray.intersectObjects(pickables, true)[0];
+  if (!hit) return; const h = hotAt(hit.point, 1.2); if (h) openSpot(h);
+}
+
+/* ---------- panels ---------- */
+const panel = $('#panel'), pbody = $('#pbody');
+$('#close').addEventListener('click', closePanel);
+function closePanel() { panel.classList.remove('open'); canvas.focus(); if (previewReset) { previewReset(); previewReset = null; } }
+let previewReset = null;
+$('#tvx').addEventListener('click', closeStream);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function todayKey(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+function openSpot(h) {
+  if (previewReset) { previewReset(); previewReset = null; }
+  if (h.type === 'stream') { openStream(); return; }
+  if (h.type === 'storefront') storePanel(h.id);
+  else if (h.type === 'club') vaultPanel();
+  else if (h.type === 'event_board') eventsPanel();
+  else venuePanel(h.id);
+  panel.classList.add('open'); panel.scrollTop = 0;
+}
+function requestBox(id) { return `<div class="req" id="${id}"><pre></pre><div class="row"><button class="hot" type="button" data-copy>Copy request</button></div><p class="note" style="margin-top:8px">Send it to ${esc(CONTACT)} and we'll lock it in.</p></div>`; }
+function wireCopy(box) {
+  box.querySelector('[data-copy]').addEventListener('click', async ev => {
+    const t = box.querySelector('pre').textContent;
+    try { await navigator.clipboard.writeText(t); ev.target.textContent = 'Copied'; }
+    catch { const r = document.createRange(); r.selectNodeContents(box.querySelector('pre')); getSelection().removeAllRanges(); getSelection().addRange(r); ev.target.textContent = 'Selected: press Ctrl+C'; }
+  });
+}
+function validate(fields) {
+  let ok = true;
+  fields.forEach(f => { const e = f.parentElement.querySelector('.err'); const bad = !f.value.trim(); if (e) e.textContent = bad ? 'Fill this in first' : ''; if (bad && ok) { f.focus(); ok = false; } });
+  return ok;
+}
+
+function storePanel(id) {
+  const s = SHOPS[id];
+  if (s) {
+    pbody.innerHTML = `<span class="pill taken">Open now</span><h2 class="mag"></h2><p class="tg"></p><p class="ab"></p>${s.example ? '<p class="note">Example listing</p>' : ''}`;
+    pbody.querySelector('h2').textContent = s.name; pbody.querySelector('.tg').textContent = s.tagline; pbody.querySelector('.ab').textContent = s.about || '';
+    return;
+  }
+  pbody.innerHTML = `
+    <span class="pill">Available</span>
+    <h2>Storefront ${id}</h2>
+    <p>Put your business on the streets of Lucid State City. People walking the city, and everyone watching the stream, see your store.</p>
+    <ul class="perks"><li>Your name in neon on this building</li><li>A click-through panel like this one with your info, products and link</li><li>A spot on the event board for openings and drops</li><li>Shout-outs when the stream passes by</li></ul>
+    <p class="note">Type your business name below to see it on the sign right now.</p>
+    <div><label for="sn">Business name</label><input id="sn" maxlength="28" autocomplete="organization"><div class="err"></div></div>
+    <div><label for="ss">What you sell</label><input id="ss" maxlength="40"><div class="err"></div></div>
+    <div><label for="sl">Website or shop link (optional)</label><input id="sl" type="url" maxlength="120"></div>
+    <div><label for="sc">How to reach you</label><input id="sc" maxlength="80" placeholder="Twitch, Instagram or email"><div class="err"></div></div>
+    <div class="row"><button class="hot" type="button" id="sgo">Request this storefront</button></div>
+    ${requestBox('sreq')}`;
+  const sn = $('#sn'), ss = $('#ss');
+  const upd = () => drawStore(id, sn.value.trim() || 'Your store here', ss.value.trim() || `LSC storefront ${id} · available`, '#29e7ff');
+  sn.addEventListener('input', () => { upd(); sn.parentElement.querySelector('.err').textContent = ''; });
+  ss.addEventListener('input', () => { upd(); ss.parentElement.querySelector('.err').textContent = ''; });
+  $('#sc').addEventListener('input', e => e.target.parentElement.querySelector('.err').textContent = '');
+  previewReset = () => drawStore(id, 'Your store here', `LSC storefront ${id} · available`, '#29e7ff');
+  const box = $('#sreq'); wireCopy(box);
+  $('#sgo').addEventListener('click', () => {
+    if (!validate([sn, ss, $('#sc')])) return;
+    box.querySelector('pre').textContent = `LSC STOREFRONT REQUEST\nStorefront: ${id}\nBusiness: ${sn.value.trim()}\nSells: ${ss.value.trim()}\nLink: ${$('#sl').value.trim() || '(none)'}\nContact: ${$('#sc').value.trim()}`;
+    box.style.display = 'block'; previewReset = null;
+  });
+}
+
+function vaultPanel() {
+  const days = []; const d0 = new Date(); d0.setHours(12);
+  for (let i = 0; i < 14; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); days.push(d); }
+  pbody.innerHTML = `
+    <span class="pill">Club for hire</span>
+    <h2 class="red">The Vault</h2>
+    <p>Book the whole club for your night. Your name goes up on the marquee, your live set plays on the club's screens, and your night is on the event board.</p>
+    <ul class="perks"><li>Your DJ name on the marquee outside</li><li>Your stream on the screens inside</li><li>Listed on the event board at the city gate</li><li>Fridays and Saturdays are prime nights</li></ul>
+    <label>Pick a night</label>
+    <div class="dates" id="dates">${days.map(d => { const k = todayKey(d), wd = d.getDay(), prime = wd === 5 || wd === 6, taken = VAULT_BOOKED[k];
+      return `<button type="button" data-k="${k}" ${taken ? 'disabled' : ''}>${d.toLocaleDateString(undefined, { weekday: 'short' })}<span>${d.getDate()} ${d.toLocaleDateString(undefined, { month: 'short' })}</span><small>${taken ? 'Booked' : prime ? 'Prime' : ''}</small></button>`; }).join('')}</div>
+    <div class="err" id="derr"></div>
+    <p class="note">Type your DJ name to see it on the marquee.</p>
+    <div><label for="dn">DJ name</label><input id="dn" maxlength="26"><div class="err"></div></div>
+    <div><label for="dg">Genre</label><input id="dg" maxlength="40" placeholder="Techno, house, hip-hop…"><div class="err"></div></div>
+    <div><label for="ds">Where you stream (optional)</label><input id="ds" maxlength="120" placeholder="Twitch or YouTube link"></div>
+    <div><label for="dc">How to reach you</label><input id="dc" maxlength="80"><div class="err"></div></div>
+    <div class="row"><button class="hot" type="button" id="dgo">Request this night</button></div>
+    ${requestBox('dreq')}`;
+  let sel = null;
+  $('#dates').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; document.querySelectorAll('#dates button').forEach(x => x.classList.toggle('sel', x === b)); sel = b.dataset.k; $('#derr').textContent = ''; });
+  const dn = $('#dn');
+  dn.addEventListener('input', () => { drawVault(dn.value.trim()); dn.parentElement.querySelector('.err').textContent = ''; });
+  ['#dg', '#dc'].forEach(s => $(s).addEventListener('input', e => e.target.parentElement.querySelector('.err').textContent = ''));
+  previewReset = () => drawVault(VAULT_BOOKED[todayKey()] || '');
+  const box = $('#dreq'); wireCopy(box);
+  $('#dgo').addEventListener('click', () => {
+    if (!sel) { $('#derr').textContent = 'Pick a night first'; return; }
+    if (!validate([dn, $('#dg'), $('#dc')])) return;
+    box.querySelector('pre').textContent = `THE VAULT BOOKING REQUEST\nNight: ${sel}\nDJ: ${dn.value.trim()}\nGenre: ${$('#dg').value.trim()}\nStream: ${$('#ds').value.trim() || '(none)'}\nContact: ${$('#dc').value.trim()}`;
+    box.style.display = 'block'; previewReset = null;
+  });
+}
+
+function eventsPanel() {
+  pbody.innerHTML = `<span class="pill">Event board</span><h2>Tonight in LSC</h2>` +
+    EVENTS.map(e => `<div class="ev"><b>${esc(e.when)}</b>${esc(e.where)} · ${esc(e.what)}</div>`).join('') +
+    `<p class="note" style="margin-top:14px">Want your event up here? Book The Vault or lease a storefront.</p>`;
+}
+const VENUES = {
+  zerocool: ['Zero Cool', 'red', 'The main club. Black walls, red neon, and the stream on the screens. The Green Room is in the back.'],
+  fightclub: ['Fight Club', 'mag', 'The fighting gamers\' paradise: fight stage, arcade cabinets, the tournament bracket, and the K.O. Lounge. Home of Lucid State City Scuffle Hours.'],
+  bit: ['Back In Time', '', 'B.I.T.: 90s and 2000s gaming. CRT stations, retro consoles and the Y2K Lounge.']
+};
+function venuePanel(id) {
+  const v = VENUES[id]; if (!v) return;
+  pbody.innerHTML = `<span class="pill">Venue</span><h2 class="${v[1]}"></h2><p></p>`;
+  pbody.querySelector('h2').textContent = v[0]; pbody.querySelector('p').textContent = v[2];
+}
+
+/* ---------- city life ---------- */
+const BPM = 124, CX = [-90, -45, 0, 45, 90];
+const near1 = (v, arr) => { let d = 1e9, c = 0; for (const a of arr) { const k = Math.abs(v - a); if (k < d) { d = k; c = a; } } return [d, c]; };
+const walkers = [], idlers = [], dancers = [], cars = [], flyers = [], flickerMats = [];
+let rain = null, rainOn = true;
+function initLife(city, vb) {
+  const venueBoxes = Object.values(vb);
+  const cits = []; city.traverse(o => { if (/^CITIZEN_\d+$/.test(o.name)) cits.push(o); });
+  cits.forEach((o, i) => {
+    const p = o.position, base = p.clone(), ph = Math.random() * 6.28;
+    if (venueBoxes.some(b => b.containsPoint(o.getWorldPosition(new THREE.Vector3())))) { dancers.push({ o, base, ph, ry: o.rotation.y }); return; }
+    const crowded = cits.some((q, j) => j !== i && Math.abs(q.position.x - p.x) < 1.1 && Math.abs(q.position.z - p.z) < 1.1);
+    if (crowded || Math.random() < 0.3) { idlers.push({ o, base, ph, ry: o.rotation.y }); return; }
+    const [dx] = near1(p.x, CX), [dz] = near1(p.z, CX);
+    walkers.push({ o, base, ph, axis: dx < dz ? 'z' : 'x', dir: Math.random() < .5 ? -1 : 1, sp: 1.1 + Math.random() * 0.9, ry: o.rotation.y });
+  });
+  city.traverse(o => {
+    if (!/^CAR_\d+$/.test(o.name)) return;
+    const f = new THREE.Vector3(1, 0, 0).applyQuaternion(o.quaternion); f.y = 0; f.normalize();
+    if (Math.abs(f.x) > Math.abs(f.z)) f.set(Math.sign(f.x), 0, 0); else f.set(0, 0, Math.sign(f.z));
+    cars.push({ o, f, sp: 8 + Math.random() * 6 });
+  });
+  // flying cars
+  const glowC = [0x29e7ff, 0xff3ea5, 0xffb347];
+  for (let i = 0; i < 7; i++) {
+    const g = new THREE.Group(), c = glowC[i % 3];
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(3.2, .8, 1.5), new THREE.MeshStandardMaterial({ color: 0x15121f, metalness: .7, roughness: .35 })));
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(1.5, .6, 1.2), new THREE.MeshStandardMaterial({ color: 0x0a1420, emissive: 0x1a4a66, emissiveIntensity: .8 })); cab.position.set(-.2, .6, 0); g.add(cab);
+    const ug = new THREE.Mesh(new THREE.BoxGeometry(3, .08, 1.3), new THREE.MeshBasicMaterial({ color: c })); ug.position.y = -.45; g.add(ug);
+    const hl = new THREE.Mesh(new THREE.BoxGeometry(.1, .2, 1.1), new THREE.MeshBasicMaterial({ color: 0xffffff })); hl.position.x = 1.62; g.add(hl);
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(.1, .2, 1.1), new THREE.MeshBasicMaterial({ color: 0xff2030 })); tl.position.x = -1.62; g.add(tl);
+    scene.add(g);
+    flyers.push({ g, r: 55 + i * 9, h: 26 + (i % 4) * 7, sp: (0.05 + i * 0.008) * (i % 2 ? 1 : -1), a: i * 0.9, wob: Math.random() * 6 });
+  }
+  // neon flicker pool
+  const seen = new Set();
+  scene.traverse(o => { const m = o.material; if (o.isMesh && m && !Array.isArray(m) && m.emissive && m.emissiveIntensity > .5 && (m.emissive.r + m.emissive.g + m.emissive.b) > .4 && !seen.has(m)) { seen.add(m); flickerMats.push({ m, base: m.emissiveIntensity }); } });
+  // rain
+  const N = 2600, pos = new Float32Array(N * 6), seed = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) { seed[i * 3] = (Math.random() - .5) * 70; seed[i * 3 + 1] = Math.random() * 30; seed[i * 3 + 2] = (Math.random() - .5) * 70; }
+  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  rain = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0x9fc4ff, transparent: true, opacity: .32, fog: true }));
+  rain.frustumCulled = false; rain.userData.seed = seed; scene.add(rain);
+  console.log(`life: ${walkers.length} walking, ${dancers.length} dancing, ${idlers.length} hanging out, ${cars.length} cars, ${flickerMats.length} neon`);
+}
+let flick = null, nextFlick = 2;
+function updateLife(dt, t) {
+  const beat = t * BPM / 60;
+  for (const w of walkers) {
+    const p = w.o.position, k = w.axis;
+    p[k] += w.dir * w.sp * dt;
+    if (p[k] > 98 || p[k] < -98 || Math.abs(p[k] - w.base[k]) > 70) { w.dir *= -1; p[k] += w.dir * .2; }
+    p.y = w.base.y + Math.abs(Math.sin(t * 7 * w.sp + w.ph)) * .07;
+    w.o.rotation.y = w.ry + Math.sin(t * 7 * w.sp + w.ph) * .06;
+  }
+  for (const d of dancers) {
+    const b = beat * Math.PI * 2 + d.ph * .3;
+    d.o.position.y = d.base.y + Math.max(0, Math.sin(b)) * .28;
+    d.o.rotation.y = d.ry + Math.sin(beat * Math.PI + d.ph) * .35;
+  }
+  for (const d of idlers) d.o.rotation.y = d.ry + Math.sin(t * .6 + d.ph) * .25;
+  for (const c of cars) {
+    const p = c.o.position; p.x += c.f.x * c.sp * dt; p.z += c.f.z * c.sp * dt;
+    if (p.x > 104) p.x = -104; else if (p.x < -104) p.x = 104;
+    if (p.z > 104) p.z = -104; else if (p.z < -104) p.z = 104;
+  }
+  for (const f of flyers) {
+    f.a += f.sp * dt; const x = Math.cos(f.a) * f.r, z = Math.sin(f.a) * f.r * .8;
+    f.g.position.set(x, f.h + Math.sin(t * .7 + f.wob) * 1.2, z);
+    const tx = -Math.sin(f.a) * Math.sign(f.sp), tz = Math.cos(f.a) * .8 * Math.sign(f.sp);
+    f.g.rotation.y = Math.atan2(-tz, tx);
+  }
+  // flicker
+  if (flick) { flick.left -= dt; flick.f.m.emissiveIntensity = flick.f.base * (Math.sin(t * 90) > .2 ? 1 : .12); if (flick.left <= 0) { flick.f.m.emissiveIntensity = flick.f.base; flick = null; } }
+  else if ((nextFlick -= dt) <= 0 && flickerMats.length) { flick = { f: flickerMats[(Math.random() * flickerMats.length) | 0], left: .25 + Math.random() * .5 }; nextFlick = 1.5 + Math.random() * 4; }
+  // rain
+  if (rain) {
+    rain.visible = rainOn;
+    if (rainOn) {
+      const a = rain.geometry.attributes.position.array, sd = rain.userData.seed, px = player.pos.x, pz = player.pos.z;
+      for (let i = 0, n = sd.length / 3; i < n; i++) {
+        let y = sd[i * 3 + 1] - dt * 26; if (y < 0) y += 30; sd[i * 3 + 1] = y;
+        const x = px + sd[i * 3], z = pz + sd[i * 3 + 2], j = i * 6;
+        a[j] = x; a[j + 1] = y; a[j + 2] = z; a[j + 3] = x + .05; a[j + 4] = y + .7; a[j + 5] = z;
+      }
+      rain.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+}
+
+/* ---------- sound (made in the browser, no files) ---------- */
+let AC = null, master = null, soundOn = true, noiseBuf = null, step = 0, nextT = 0;
+const CLUBS = [
+  { pos: [-23, 4, -22.5], style: 'house', vol: .9 },     // Zero Cool
+  { pos: [-60, 4, -67.5], style: 'techno', vol: .8 },    // The Vault
+  { pos: [-67, 4, -22.5], style: 'arcade', vol: .6 },    // Fight Club
+  { pos: [-67, 4, 22.5], style: 'arcade2', vol: .6 }     // B.I.T.
+];
+function startAudio() {
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = .7; master.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate); const d = noiseBuf.getChannelData(0); let last = 0;
+    for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; d[i] = last * 3.5; }
+    const amb = AC.createBufferSource(); amb.buffer = noiseBuf; amb.loop = true;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    const ag = AC.createGain(); ag.gain.value = .22; amb.connect(lp).connect(ag).connect(master); amb.start();
+    for (const c of CLUBS) {
+      const pn = AC.createPanner(); pn.panningModel = 'equalpower'; pn.distanceModel = 'inverse'; pn.refDistance = 6; pn.rolloffFactor = 1.5; pn.maxDistance = 160;
+      if (pn.positionX) { pn.positionX.value = c.pos[0]; pn.positionY.value = c.pos[1]; pn.positionZ.value = c.pos[2]; } else pn.setPosition(...c.pos);
+      c.bus = AC.createGain(); c.bus.gain.value = c.vol; c.bus.connect(pn).connect(master);
+    }
+    nextT = AC.currentTime + .1; setInterval(schedule, 25);
+  } catch (e) { console.warn('No audio', e); AC = null; $('#snd').disabled = true; }
+}
+function env(g, t, a, dur) { g.gain.setValueAtTime(a, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur); }
+function kick(bus, t) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .13); env(g, t, 1, .32); o.connect(g).connect(bus); o.start(t); o.stop(t + .35); }
+function noiseHit(bus, t, f, q, a, dur, type = 'bandpass') { const s = AC.createBufferSource(), fl = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf; fl.type = type; fl.frequency.value = f; fl.Q.value = q; env(g, t, a, dur); s.connect(fl).connect(g).connect(bus); s.start(t, Math.random()); s.stop(t + dur + .02); }
+function tone(bus, t, f, type, a, dur, cut) { const o = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(); o.type = type; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = cut; env(g, t, a, dur); o.connect(fl).connect(g).connect(bus); o.start(t); o.stop(t + dur + .02); }
+const ARP = [440, 523.3, 659.3, 784, 659.3, 523.3, 392, 523.3], ARP2 = [329.6, 392, 493.9, 587.3, 493.9, 392, 293.7, 392];
+function schedule() {
+  if (!AC) return; const s16 = 60 / BPM / 4;
+  while (nextT < AC.currentTime + .12) {
+    const st = step % 16, bar = (step >> 4) % 4;
+    for (const c of CLUBS) {
+      const b = c.bus, t = nextT;
+      if (c.style === 'house' || c.style === 'techno') {
+        if (st % 4 === 0) kick(b, t);
+        if (st % 4 === 2) { noiseHit(b, t, 9000, 1, .25, .05, 'highpass'); tone(b, t, c.style === 'house' ? [55, 55, 65.4, 49][bar] : 49, 'sawtooth', .35, .16, 380); }
+        if (c.style === 'techno' && (st === 4 || st === 12)) noiseHit(b, t, 1600, 2, .5, .12);
+        if (c.style === 'house' && st % 8 === 6) tone(b, t, [220, 261.6, 196, 246.9][bar], 'triangle', .12, .25, 2200);
+      } else {
+        const arp = c.style === 'arcade' ? ARP : ARP2;
+        tone(b, t, arp[(st + bar * 2) % 8], 'square', .07, .09, 3000);
+        if (st % 8 === 0) kick(b, t);
+        if (st % 8 === 4) noiseHit(b, t, 3000, 1, .2, .06);
+      }
+    }
+    nextT += s16; step++;
+  }
+}
+const fwdL = new THREE.Vector3();
+function updateListener() {
+  if (!AC) return; const L = AC.listener, p = player.pos; camera.getWorldDirection(fwdL);
+  if (L.positionX) { L.positionX.value = p.x; L.positionY.value = p.y; L.positionZ.value = p.z; L.forwardX.value = fwdL.x; L.forwardY.value = fwdL.y; L.forwardZ.value = fwdL.z; L.upX.value = 0; L.upY.value = 1; L.upZ.value = 0; }
+  else { L.setPosition(p.x, p.y, p.z); L.setOrientation(fwdL.x, fwdL.y, fwdL.z, 0, 1, 0); }
+}
+$('#snd').addEventListener('click', () => {
+  if (!AC) { startAudio(); soundOn = true; }
+  else { soundOn = !soundOn; AC.resume(); master.gain.setTargetAtTime(soundOn ? .7 : 0, AC.currentTime, .05); }
+  $('#snd').textContent = 'Sound: ' + (soundOn ? 'on' : 'off');
+});
+$('#rainb').addEventListener('click', () => { rainOn = !rainOn; $('#rainb').textContent = 'Rain: ' + (rainOn ? 'on' : 'off'); });
+
+/* ---------- loop ---------- */
+const prompt = $('#prompt'); let near = null, lastNear = null;
+prompt.addEventListener('click', () => near && openSpot(near));
+const LABEL = h => h.type === 'stream' ? 'Watch Lucid State City live' : h.type === 'storefront' ? `Storefront ${h.id} · ${SHOPS[h.id] ? SHOPS[h.id].name : 'Available'}` : h.type === 'club' ? 'The Vault · Book a night' : h.type === 'event_board' ? 'Event board' : (VENUES[h.id] || [''])[0];
+function blocked(x, z) { for (const b of colliders) if (x > b.min.x - R && x < b.max.x + R && z > b.min.z - R && z < b.max.z + R) return true; return false; }
+const clock = new THREE.Clock();
+let frameErr = false, lastBlink = -1;
+function frame() { try { frameInner(); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); window.__showErr(e); } try { renderer.render(scene, camera); } catch (_) {} } }
+function frameInner() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  let f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - jv.y;
+  let s = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jv.x;
+  if (keys.KeyQ) player.yaw += 1.8 * dt;
+  const l = Math.hypot(f, s);
+  if (l > 0.05) {
+    if (l > 1) { f /= l; s /= l; }
+    const sp = (keys.ShiftLeft || keys.ShiftRight ? 13 : 6.5) * dt;
+    const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+    const dx = (-sin * f + cos * s) * sp, dz = (-cos * f - sin * s) * sp;
+    const nx = Math.max(-LIMIT, Math.min(LIMIT, player.pos.x + dx)), nz = Math.max(-LIMIT, Math.min(LIMIT, player.pos.z + dz));
+    if (!blocked(nx, player.pos.z)) player.pos.x = nx;
+    if (!blocked(player.pos.x, nz)) player.pos.z = nz;
+  }
+  camera.position.copy(player.pos);
+  camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
+  const lb = clock.elapsedTime * 2 | 0; if (liveSign && lb !== lastBlink) { lastBlink = lb; drawLive(clock.elapsedTime); }
+  near = facing(10);
+  if (near !== lastNear) {
+    lastNear = near;
+    if (near) { prompt.innerHTML = `<b>${matchMedia('(pointer:coarse)').matches ? 'Tap' : 'E'}</b> · `; prompt.append(LABEL(near)); prompt.style.display = 'block'; }
+    else prompt.style.display = 'none';
+  }
+  try { updateLife(dt, clock.elapsedTime); updateListener(); } catch (e) { if (!frameErr) { frameErr = true; console.error(e); } }
+  renderer.render(scene, camera);
+}
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+renderer.setAnimationLoop(frame);
+window.__lsc = { openSpot, hotspots, player };
+window.__onEnter = () => { canvas.focus(); startAudio(); };
+if (window.__entered) window.__onEnter();
+}
+</script>
+</body>
+</html>
